@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Ne buket</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root{
+      --mint:#cfdad5;
+      --bg:#f1f5f3;
+      --ink:#111313;
+      --muted:#7b8480;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --red:#cf3b2f;
+      --btn:#b7c8c1;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--ink);
+      background:var(--bg);
+      -webkit-text-size-adjust:100%;
+    }
+
+    .app{min-height:100vh; padding-bottom:92px; width:100%; overflow-x:hidden;}
+    .hidden{display:none!important;}
+
+    /* TOPBAR */
+    .topbar{
+      position:fixed; left:0; right:0; top:0; z-index:50;
+      background:var(--mint);
+      border-bottom:1px solid rgba(0,0,0,.05);
+      padding:14px 14px 12px;
+      padding-top:calc(14px + env(safe-area-inset-top));
+    }
+    .topgrid{position:relative; height:46px;}
+    .tbtn{
+      position:absolute; left:0; top:50%;
+      transform:translateY(-50%);
+      border:0; background:transparent;
+      padding:8px 6px;
+      font-size:18px; font-weight:500;
+      color:rgba(0,0,0,.65);
+      text-align:left;
+    }
+
+    .brand{
+      position:absolute; left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      display:flex; align-items:center; justify-content:center;
+      width:100%;
+      pointer-events:none;
+    }
+    .brand h1{
+      margin:0;
+      font-size:38px;
+      font-weight:800;
+      letter-spacing:-.8px;
+      position:relative;
+      color:rgba(0,0,0,.70);
+      line-height:1;
+    }
+
+    /* ✅ МАЗОК КАК НА МАКЕТЕ: ДИАГОНАЛЬНО ПЕРЕЧЁРКИВАЕТ СЛОВО */
+    .brand h1::after{
+      content:"";
+      position:absolute;
+      left:-18px;
+      right:-18px;
+      top:50%;
+      height:26px;
+      transform:translateY(-50%) rotate(-10deg);
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='220' viewBox='0 0 1200 220'%3E%3Cpath d='M70 150 C260 60 360 190 540 120 C720 50 860 170 1130 85' fill='none' stroke='%23cf3b2f' stroke-width='26' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M90 165 C280 90 370 200 560 145 C740 92 900 195 1110 125' fill='none' stroke='%23cf3b2f' stroke-width='14' stroke-linecap='round' stroke-linejoin='round' opacity='0.55'/%3E%3C/svg%3E")
+        center/100% 100% no-repeat;
+      opacity:.95;
+      pointer-events:none;
+      filter:saturate(1.05);
+    }
+
+    .content{
+      padding:18px 14px 20px;
+      padding-top:calc(18px + 46px + 14px + env(safe-area-inset-top));
+    }
+
+    /* Chips */
+    .chips{
+      display:flex; gap:10px; overflow:auto;
+      padding:10px 2px 14px;
+      -webkit-overflow-scrolling:touch;
+    }
+    .chip{
+      flex:0 0 auto;
+      padding:10px 16px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.55);
+      font-size:16px; font-weight:450;
+      color:rgba(0,0,0,.55);
+      letter-spacing:-.2px;
+      user-select:none; white-space:nowrap;
+    }
+    .chip.on{
+      background:rgba(255,255,255,.78);
+      border-color:rgba(0,0,0,.10);
+      color:rgba(0,0,0,.75);
+      font-weight:600;
+    }
+
+    /* Catalog grid */
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:6px;
+    }
+
+    /* ✅ Обёртка: карточка + переключатель ПОД карточкой */
+    .pWrap{display:flex; flex-direction:column;}
+
+    .card{
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:26px;
+      overflow:hidden;
+      box-shadow:0 8px 22px rgba(0,0,0,.06);
+    }
+    .ph{
+      aspect-ratio:1/1;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(0,0,0,.03));
+      color:rgba(0,0,0,.45);
+      font-size:54px;
+      font-weight:700;
+      letter-spacing:-1px;
+    }
+
+    /* снизу карточки: только название + цена */
+    .cardBody{
+      padding:12px 14px 12px;
+      background:rgba(255,255,255,.42);
+      border-top:1px solid rgba(0,0,0,.06);
+    }
+    .pTitle{
+      margin:0 0 8px;
+      font-size:17px;
+      font-weight:450;
+      letter-spacing:-.25px;
+      color:rgba(0,0,0,.70);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .price{
+      font-size:17px;
+      font-weight:450;
+      letter-spacing:-.2px;
+      color:rgba(0,0,0,.62);
+      white-space:nowrap;
+      line-height:1;
+    }
+
+    /* ✅ Переключатель под карточкой, центр */
+    .qtyUnder{
+      display:flex;
+      justify-content:center;
+      margin-top:10px;
+    }
+    .qtyPill{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.50);
+      border:1px solid rgba(0,0,0,.08);
+    }
+    .qbtn{
+      width:34px;height:34px;
+      border-radius:50%;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.70);
+      font-size:18px;
+      color:rgba(0,0,0,.50);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .qbtn:disabled{opacity:.35; cursor:default}
+    .qnum{
+      min-width:18px;
+      text-align:center;
+      font-weight:650;
+      color:rgba(0,0,0,.60);
+      font-size:18px;
+      letter-spacing:-.2px;
+      line-height:1;
+    }
+
+    /* Bottom nav (3 tabs) */
+    .bottom{
+      position:fixed; left:0; right:0; bottom:0;
+      padding:12px 18px calc(14px + env(safe-area-inset-bottom));
+      background:rgba(255,255,255,.72);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top:1px solid rgba(0,0,0,.06);
+      z-index:60;
+    }
+    .nav{display:flex; justify-content:space-around; align-items:flex-end; gap:10px;}
+    .tab{
+      width:33.333%;
+      text-align:center;
+      text-decoration:none;
+      color:rgba(0,0,0,.42);
+      font-weight:500;
+      font-size:14px;
+      user-select:none;
+      position:relative;
+      padding:6px 0 4px;
+    }
+    .tab .ico{display:block; margin:0 auto 6px; width:26px;height:26px; color:rgba(0,0,0,.42);}
+    .tab svg{
+      width:26px;height:26px;
+      stroke:currentColor; fill:none;
+      stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
+    }
+    .tab.active{color:rgba(0,0,0,.72)}
+    .tab.active .ico{color:rgba(0,0,0,.65)}
+    .badge{
+      position:absolute;
+      top:0px; left:50%;
+      transform:translate(8px,-6px);
+      min-width:18px; height:18px; padding:0 6px;
+      border-radius:999px;
+      background:rgba(0,0,0,.72); color:#fff;
+      font-weight:700; font-size:12px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .badge.hidden{display:none}
+
+    /* Cart */
+    .cartWrap{margin-top:6px;}
+    .cartItem{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      padding:14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.65);
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 8px 22px rgba(0,0,0,.06);
+      margin-bottom:14px;
+    }
+    .thumb{
+      width:64px;height:64px;
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.02));
+      display:flex; align-items:center; justify-content:center;
+      color:rgba(0,0,0,.35);
+      font-weight:700;
+      line-height:1.05;
+      text-align:center;
+    }
+    .thumb b{display:block; font-size:18px}
+    .thumb span{display:block; font-size:22px; margin-top:2px}
+    .ciLeft{display:flex; gap:12px; align-items:center; min-width:0; flex:1;}
+    .ciTxt{min-width:0;}
+    .ciName{
+      font-size:18px; font-weight:500;
+      color:rgba(0,0,0,.72);
+      letter-spacing:-.2px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      max-width:220px;
+    }
+    .ciCat{margin-top:4px; font-size:15px; font-weight:450; color:rgba(0,0,0,.38); letter-spacing:-.2px;}
+    .ciPrice{margin-top:10px; font-size:18px; font-weight:450; color:rgba(0,0,0,.60); white-space:nowrap;}
+    .totalRow{
+      display:flex; justify-content:space-between; align-items:center;
+      margin:18px 2px 14px;
+      font-size:20px; font-weight:520;
+      color:rgba(0,0,0,.58); letter-spacing:-.2px;
+    }
+    .totalRow b{font-size:22px; font-weight:650; color:rgba(0,0,0,.70);}
+    .cta{
+      width:100%;
+      border:0; border-radius:999px;
+      padding:16px 18px;
+      background:var(--btn); color:#fff;
+      font-size:18px; font-weight:650;
+      letter-spacing:-.2px;
+      box-shadow:0 12px 26px rgba(0,0,0,.10);
+      cursor:pointer;
+    }
+
+    .emptyBox{
+      margin-top:30px;
+      padding:34px 18px 26px;
+      border-radius:26px;
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(0,0,0,.06);
+      text-align:center;
+      box-shadow:0 8px 22px rgba(0,0,0,.06);
+    }
+    .leaf{width:58px;height:58px;margin:0 auto 16px;color:rgba(0,0,0,.28);}
+    .emptyTitle{font-size:22px;font-weight:520;color:rgba(0,0,0,.62);letter-spacing:-.2px;margin-bottom:10px;}
+    .emptySub{font-size:16px;font-weight:450;color:rgba(0,0,0,.40);letter-spacing:-.2px;margin-bottom:18px;}
+    .ghostBtn{
+      border:0; border-radius:999px;
+      padding:14px 18px;
+      background:rgba(0,0,0,.08);
+      color:rgba(0,0,0,.45);
+      font-size:16px; font-weight:520;
+      cursor:pointer;
+    }
+
+    /* Profile */
+    .profileTop{margin-top:14px;text-align:center;}
+    .ava{
+      width:110px;height:110px;margin:8px auto 14px;
+      border-radius:999px;
+      background:rgba(0,0,0,.05);
+      border:1px solid rgba(0,0,0,.06);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    .ava svg{width:66px;height:66px;color:rgba(0,0,0,.30)}
+    .pName{font-size:30px;font-weight:520;color:rgba(0,0,0,.68);letter-spacing:-.4px;margin:0 0 6px;}
+    .pPhone{font-size:18px;font-weight:450;color:rgba(0,0,0,.45);letter-spacing:-.2px;margin:0 0 18px;}
+
+    .panel{
+      background:rgba(255,255,255,.62);
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:26px;
+      box-shadow:0 8px 22px rgba(0,0,0,.06);
+      padding:18px;
+      margin:14px 0;
+    }
+    .panelTitle{font-size:22px;font-weight:520;color:rgba(0,0,0,.62);letter-spacing:-.2px;margin-bottom:12px;text-align:left;}
+    .statusPill{
+      display:inline-flex; align-items:center;
+      padding:10px 16px;
+      border-radius:999px;
+      background:rgba(183,200,193,.95);
+      color:#fff;
+      font-weight:650;
+      letter-spacing:-.2px;
+      font-size:16px;
+      margin-bottom:12px;
+    }
+    .rowLink{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding:16px 16px;
+      border-radius:18px;
+      background:rgba(0,0,0,.05);
+      color:rgba(0,0,0,.55);
+      font-size:18px;
+      font-weight:450;
+      letter-spacing:-.2px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .rowLeft{display:flex; align-items:center; gap:10px; min-width:0;}
+    .rowLeft span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;}
+    .rowIco{width:22px;height:22px; color:rgba(0,0,0,.35);}
+    .chev{width:18px;height:18px; color:rgba(0,0,0,.28);}
+    .listBlock{margin-top:12px; display:flex; flex-direction:column; gap:14px;}
+
+    /* Modal (checkout) */
+    .modal{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.28);
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      padding:12px;
+      z-index:200;
+    }
+    .sheet{
+      width:min(560px, 100%);
+      max-height:92vh;
+      background:rgba(255,255,255,.92);
+      border-radius:26px;
+      border:1px solid rgba(0,0,0,.08);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+    .sheetHead{
+      background:var(--mint);
+      padding:14px 16px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid rgba(0,0,0,.05);
+    }
+    .sheetTitle{font-size:18px;font-weight:650;color:rgba(0,0,0,.62);letter-spacing:-.2px;}
+    .xbtn{
+      width:40px;height:40px;
+      border-radius:14px;
+      border:0;
+      background:rgba(255,255,255,.35);
+      color:rgba(0,0,0,.55);
+      font-size:20px;
+    }
+    .sheetBody{
+      padding:16px;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      background:transparent;
+    }
+    label{
+      display:block;
+      font-size:14px;
+      font-weight:520;
+      color:rgba(0,0,0,.55);
+      margin:0 0 8px;
+      letter-spacing:-.2px;
+    }
+    input{
+      width:100%;
+      padding:14px 14px;
+      border-radius:18px;
+      border:1px solid rgba(0,0,0,.10);
+      background:rgba(255,255,255,.75);
+      font-size:16px;
+      outline:none;
+      color:rgba(0,0,0,.72);
+    }
+    .field{margin-bottom:14px;}
+    .err{
+      margin-top:8px;
+      color:var(--red);
+      font-size:13px;
+      font-weight:520;
+      display:none;
+      letter-spacing:-.1px;
+    }
+    .sheetFoot{
+      padding:12px 16px 16px;
+      border-top:1px solid rgba(0,0,0,.06);
+      background:transparent;
+    }
+    .send{
+      width:100%;
+      border:0;
+      border-radius:999px;
+      padding:16px 18px;
+      background:var(--btn);
+      color:#fff;
+      font-size:18px;
+      font-weight:650;
+      letter-spacing:-.2px;
+      cursor:pointer;
+    }
+
+    .toggleRow{display:flex; gap:10px; margin:4px 0 14px;}
+    .pill{
+      flex:1;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.10);
+      background:rgba(255,255,255,.60);
+      padding:12px 12px;
+      font-size:16px;
+      font-weight:520;
+      color:rgba(0,0,0,.55);
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill.on{
+      background:rgba(183,200,193,.95);
+      color:#fff;
+      border-color:rgba(0,0,0,.06);
+      font-weight:650;
+    }
+
+    @media (max-width:360px){
+      .grid{grid-template-columns:1fr}
+      .brand h1{font-size:34px}
+      .ciName{max-width:160px}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="topgrid">
+        <button class="tbtn" id="closeBtn">Закрыть</button>
+        <div class="brand"><h1>Ne buket</h1></div>
+      </div>
+    </div>
+
+    <div class="content">
+      <section id="page-catalog">
+        <div class="chips" id="chips"></div>
+        <div class="grid" id="grid"></div>
+      </section>
+
+      <section id="page-cart" class="hidden">
+        <div class="cartWrap" id="cartWrap"></div>
+      </section>
+
+      <section id="page-profile" class="hidden">
+        <div class="profileTop">
+          <div class="ava" id="ava">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 21a8 8 0 0 0-16 0"/>
+              <path d="M12 12a4 4 0 1 0-0.01 0"/>
+            </svg>
+          </div>
+          <h2 class="pName" id="pName">Пользователь</h2>
+          <p class="pPhone" id="pPhone">—</p>
+        </div>
+
+        <div class="panel" id="activePanel">
+          <div class="panelTitle">Активный заказ</div>
+          <div id="activeInner"></div>
+        </div>
+
+        <div class="listBlock">
+          <div class="rowLink" id="historyBtn">
+            <div class="rowLeft">
+              <svg class="rowIco" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 8v5l3 2"></path>
+                <path d="M3.5 12a8.5 8.5 0 1 0 3-6.5"></path>
+                <path d="M3 4v5h5"></path>
+              </svg>
+              <span>История заказов</span>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 18l6-6-6-6"></path>
+            </svg>
+          </div>
+
+          <div class="rowLink" id="addrBtn">
+            <div class="rowLeft">
+              <svg class="rowIco" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11Z"></path>
+                <path d="M12 10.5a2 2 0 1 0 0.01 0"></path>
+              </svg>
+              <span>Адреса доставки</span>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 18l6-6-6-6"></path>
+            </svg>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="bottom">
+      <div class="nav">
+        <a class="tab active" href="#catalog" id="tab-catalog">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7h16"></path>
+              <path d="M4 12h16"></path>
+              <path d="M4 17h16"></path>
+            </svg>
+          </span>
+          Каталог
+        </a>
+
+        <a class="tab" href="#cart" id="tab-cart">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 9h10l-1 11H8L7 9Z"></path>
+              <path d="M9 9a3 3 0 0 1 6 0"></path>
+            </svg>
+          </span>
+          Корзина
+          <span class="badge hidden" id="badge">0</span>
+        </a>
+
+        <a class="tab" href="#profile" id="tab-profile">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 21a8 8 0 0 0-16 0"></path>
+              <path d="M12 12a4 4 0 1 0-0.01 0"></path>
+            </svg>
+          </span>
+          Профиль
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT MODAL -->
+  <div class="modal hidden" id="checkoutModal">
+    <div class="sheet">
+      <div class="sheetHead">
+        <div class="sheetTitle">Оформление</div>
+        <button class="xbtn" id="xClose">✕</button>
+      </div>
+
+      <div class="sheetBody" id="formView">
+        <div class="toggleRow" id="deliveryToggle">
+          <div class="pill on" data-mode="delivery">Доставка</div>
+          <div class="pill" data-mode="pickup">Самовывоз</div>
+        </div>
+
+        <div class="field">
+          <label for="cName">Имя</label>
+          <input id="cName" placeholder="Алексей" />
+          <div class="err" id="eName"></div>
+        </div>
+
+        <div class="field">
+          <label for="cPhone">Телефон</label>
+          <input id="cPhone" inputmode="numeric" placeholder="+7 (___) ___-__-__" />
+          <div class="err" id="ePhone"></div>
+        </div>
+
+        <div id="addrGroup">
+          <div class="field">
+            <label for="aCity">Город</label>
+            <input id="aCity" placeholder="Москва" />
+            <div class="err" id="eCity"></div>
+          </div>
+
+          <div class="field">
+            <label for="aStreet">Улица</label>
+            <input id="aStreet" placeholder="Цветочная" />
+            <div class="err" id="eStreet"></div>
+          </div>
+
+          <div class="field">
+            <label for="aHouse">Дом</label>
+            <input id="aHouse" placeholder="15" />
+            <div class="err" id="eHouse"></div>
+          </div>
+
+          <div class="field">
+            <label for="aApt">Квартира (необязательно)</label>
+            <input id="aApt" placeholder="77" />
+            <div class="err" id="eApt"></div>
+          </div>
+        </div>
+
+        <div class="sheetFoot">
+          <button class="send" id="sendOrder">Отправить в работу</button>
+        </div>
+      </div>
+
+      <div class="sheetBody hidden" id="okView">
+        <div style="font-size:20px;font-weight:650;color:rgba(0,0,0,.68);letter-spacing:-.2px;margin-bottom:10px;">
+          Ваш заказ уже в работе
+        </div>
+        <div style="font-size:16px;font-weight:450;color:rgba(0,0,0,.45);letter-spacing:-.2px;line-height:1.35;">
+          Мы спешим позвонить Вам для подтверждения и оплаты заказа.
+        </div>
+        <div class="sheetFoot" style="border-top:0;padding-top:18px;">
+          <button class="send" id="okBtn">Ок</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+    document.getElementById("closeBtn").onclick = () => tg?.close();
+
+    const CATEGORIES = ["Все","Охапки","Сеты","Зелень"];
+    const PRODUCTS = Array.from({length: 12}).map((_, i) => ({
+      id: "p" + (i+1),
+      title: "Название товара " + (i+1),
+      price: 1500 + i * 220,
+      cat: CATEGORIES[1 + (i % (CATEGORIES.length - 1))],
+      ph: (i+1)
+    }));
+
+    const CART_KEY = "nebuket_cart_v4";
+    const ORDERS_KEY = "nebuket_orders_v4";
+    const ACTIVE_KEY = "nebuket_active_v4";
+    const LAST_PHONE_KEY = "nebuket_last_phone_v4";
+    const LAST_ADDR_KEY = "nebuket_last_addr_v4";
+
+    const cart = JSON.parse(localStorage.getItem(CART_KEY) || "{}");
+    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
+    let activeId = localStorage.getItem(ACTIVE_KEY) || "";
+
+    const saveCart = () => localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    const saveOrders = () => localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    const saveActive = () => localStorage.setItem(ACTIVE_KEY, activeId);
+
+    const $ = (id) => document.getElementById(id);
+
+    const qtyOf = (id) => cart[id] || 0;
+    const cartCount = () => Object.values(cart).reduce((a,b)=>a+b,0);
+    const cartTotal = () => {
+      let sum = 0;
+      for (const [id, q] of Object.entries(cart)){
+        const p = PRODUCTS.find(x=>x.id===id);
+        if (p) sum += p.price * q;
+      }
+      return sum;
+    };
+    function formatMoney(n){ return n.toLocaleString("ru-RU") + " ₽"; }
+
+    function formatAddress(addr){
+      if (!addr) return "";
+      if (addr.mode === "pickup") return "Самовывоз";
+      const parts = [];
+      if (addr.city) parts.push("г. " + addr.city);
+      if (addr.street) parts.push("ул. " + addr.street);
+      if (addr.house) parts.push("д. " + addr.house);
+      if (addr.apt) parts.push("кв. " + addr.apt);
+      return parts.join(", ");
+    }
+
+    /* Navigation */
+    const pages = { catalog: $("page-catalog"), cart: $("page-cart"), profile: $("page-profile") };
+    const tabs = { catalog: $("tab-catalog"), cart: $("tab-cart"), profile: $("tab-profile") };
+
+    function showPage(name){
+      Object.keys(pages).forEach(k => pages[k].classList.toggle("hidden", k !== name));
+      Object.keys(tabs).forEach(k => tabs[k].classList.toggle("active", k === name));
+      location.hash = name;
+      renderBadge();
+      if (name === "cart") renderCart();
+      if (name === "profile") renderProfile();
+    }
+    Object.keys(tabs).forEach(k => tabs[k].addEventListener("click", (e) => { e.preventDefault(); showPage(k); }));
+
+    /* Chips */
+    const state = { cat: "Все" };
+    function renderChips(){
+      $("chips").innerHTML = CATEGORIES.map(c => `
+        <button class="chip ${state.cat===c ? "on":""}" data-cat="${c}">${c}</button>
+      `).join("");
+      $("chips").onclick = (e) => {
+        const b = e.target.closest("button"); if(!b) return;
+        state.cat = b.dataset.cat;
+        renderCatalog();
+      };
+    }
+
+    /* ✅ Catalog with qty under card */
+    function renderCatalog(){
+      const list = PRODUCTS.filter(p => state.cat === "Все" || p.cat === state.cat);
+
+      $("grid").innerHTML = list.map(p => `
+        <div class="pWrap">
+          <div class="card">
+            <div class="ph">${p.ph}</div>
+            <div class="cardBody">
+              <p class="pTitle" title="${p.title}">${p.title}</p>
+              <div class="price">${formatMoney(p.price)}</div>
+            </div>
+          </div>
+
+          <div class="qtyUnder">
+            <div class="qtyPill">
+              <button class="qbtn" data-dec="${p.id}" ${qtyOf(p.id)===0 ? "disabled":""}>–</button>
+              <div class="qnum">${qtyOf(p.id)}</div>
+              <button class="qbtn" data-inc="${p.id}">+</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+
+      $("grid").onclick = (e) => {
+        const btn = e.target.closest("button"); if(!btn) return;
+        const inc = btn.dataset.inc;
+        const dec = btn.dataset.dec;
+
+        if (inc){
+          cart[inc] = (cart[inc] || 0) + 1;
+          saveCart();
+          renderCatalog();
+          renderBadge();
+        }
+        if (dec){
+          cart[dec] = (cart[dec] || 0) - 1;
+          if (cart[dec] <= 0) delete cart[dec];
+          saveCart();
+          renderCatalog();
+          renderBadge();
+        }
+      };
+    }
+
+    function renderBadge(){
+      const n = cartCount();
+      $("badge").textContent = String(n);
+      $("badge").classList.toggle("hidden", n === 0);
+    }
+
+    /* Cart */
+    function renderCart(){
+      const wrap = $("cartWrap");
+      const empty = Object.keys(cart).length === 0;
+
+      if (empty){
+        wrap.innerHTML = `
+          <div class="emptyBox">
+            <svg class="leaf" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21c4-3 6-6 6-10-3 0-6 2-8 5-1-3-4-5-8-5 0 4 2 7 6 10"
+                fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="emptyTitle">Корзина пустая</div>
+            <div class="emptySub">Нажми “+” у товара. Он появится здесь.</div>
+            <button class="ghostBtn" id="toCatalog">В каталог</button>
+          </div>
+        `;
+        $("toCatalog").onclick = () => showPage("catalog");
+        return;
+      }
+
+      const itemsHtml = Object.entries(cart).map(([id, qty]) => {
+        const p = PRODUCTS.find(x=>x.id===id);
+        if (!p) return "";
+        const nn = String(p.ph).padStart(2,"0");
+        return `
+          <div class="cartItem">
+            <div class="ciLeft">
+              <div class="thumb"><b>NE</b><span>${nn}</span></div>
+              <div class="ciTxt">
+                <div class="ciName">${p.title}</div>
+                <div class="ciCat">${p.cat}</div>
+                <div class="ciPrice">${formatMoney(p.price)}</div>
+              </div>
+            </div>
+
+            <div class="qtyPill" style="background:rgba(255,255,255,.55);">
+              <button class="qbtn" data-dec="${p.id}">–</button>
+              <div class="qnum">${qty}</div>
+              <button class="qbtn" data-inc="${p.id}">+</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      wrap.innerHTML = `
+        ${itemsHtml}
+        <div class="totalRow">
+          <span>Итого:</span>
+          <b>${formatMoney(cartTotal())}</b>
+        </div>
+        <button class="cta" id="checkoutBtn">Оформить</button>
+      `;
+
+      wrap.onclick = (e) => {
+        const btn = e.target.closest("button"); if(!btn) return;
+        const inc = btn.dataset.inc;
+        const dec = btn.dataset.dec;
+
+        if (inc){
+          cart[inc] = (cart[inc] || 0) + 1;
+          saveCart();
+          renderCart();
+          renderBadge();
+        }
+        if (dec){
+          cart[dec] = (cart[dec] || 0) - 1;
+          if (cart[dec] <= 0) delete cart[dec];
+          saveCart();
+          renderCart();
+          renderBadge();
+        }
+      };
+
+      $("checkoutBtn").onclick = () => openCheckout();
+    }
+
+    /* Profile */
+    function renderProfile(){
+      const user = tg?.initDataUnsafe?.user;
+      const name = user ? [user.first_name, user.last_name].filter(Boolean).join(" ").trim() : "Пользователь";
+      $("pName").textContent = name || "Пользователь";
+
+      const lastPhone = localStorage.getItem(LAST_PHONE_KEY) || "";
+      $("pPhone").textContent = lastPhone || "—";
+
+      const active = orders.find(o => o.id === activeId && o.status === "in_work");
+
+      if (!active){
+        $("activeInner").innerHTML = `
+          <div style="color:rgba(0,0,0,.40);font-weight:450;letter-spacing:-.2px;">
+            У вас нет активных заказов
+          </div>
+        `;
+      } else {
+        $("activeInner").innerHTML = `
+          <div class="statusPill">Оформление</div>
+          <div class="rowLink" id="openActive">
+            <div class="rowLeft">
+              <svg class="rowIco" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11Z"></path>
+                <path d="M12 10.5a2 2 0 1 0 0.01 0"></path>
+              </svg>
+              <span>${active.addressText}</span>
+            </div>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 18l6-6-6-6"></path>
+            </svg>
+          </div>
+        `;
+        $("openActive").onclick = () => {
+          alert(`Заказ №${active.id}\nСумма: ${formatMoney(active.total)}\n${active.addressText}`);
+        };
+      }
+
+      $("historyBtn").onclick = () => {
+        if (!orders.length) { alert("История заказов пока пустая."); return; }
+        const o = orders[0];
+        alert(`Последний заказ №${o.id}\nСумма: ${formatMoney(o.total)}\n${o.addressText}`);
+      };
+      $("addrBtn").onclick = () => {
+        const lastAddr = JSON.parse(localStorage.getItem(LAST_ADDR_KEY) || "null");
+        alert(lastAddr ? `Последний адрес:\n${formatAddress(lastAddr)}` : "Пока нет сохранённых адресов.");
+      };
+    }
+
+    /* Checkout modal */
+    const checkoutModal = $("checkoutModal");
+    const formView = $("formView");
+    const okView = $("okView");
+
+    let lockDepth = 0;
+    let scrollTop = 0;
+
+    function lockScroll(){
+      lockDepth++;
+      if (lockDepth > 1) return;
+      scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollTop}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.width = "100%";
+    }
+    function unlockScroll(){
+      lockDepth = Math.max(0, lockDepth - 1);
+      if (lockDepth !== 0) return;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollTop);
+    }
+
+    const checkoutState = { mode: "delivery" };
+    function setMode(mode){
+      checkoutState.mode = mode;
+      const pills = $("deliveryToggle").querySelectorAll(".pill");
+      pills.forEach(p => p.classList.toggle("on", p.dataset.mode === mode));
+      $("addrGroup").classList.toggle("hidden", mode === "pickup");
+      if (mode === "pickup") {
+        ["eCity","eStreet","eHouse","eApt"].forEach(id => { $(id).style.display="none"; $(id).textContent=""; });
+      }
+    }
+    $("deliveryToggle").addEventListener("click", (e) => {
+      const pill = e.target.closest(".pill");
+      if (!pill) return;
+      setMode(pill.dataset.mode);
+    });
+
+    function openCheckout(){
+      formView.classList.remove("hidden");
+      okView.classList.add("hidden");
+      clearErrors();
+
+      $("cName").value = tg?.initDataUnsafe?.user?.first_name || "";
+      $("cPhone").value = localStorage.getItem(LAST_PHONE_KEY) || "";
+
+      const lastAddr = JSON.parse(localStorage.getItem(LAST_ADDR_KEY) || "null");
+      if (lastAddr && lastAddr.mode === "delivery"){
+        $("aCity").value = lastAddr.city || "";
+        $("aStreet").value = lastAddr.street || "";
+        $("aHouse").value = lastAddr.house || "";
+        $("aApt").value = lastAddr.apt || "";
+      } else {
+        $("aCity").value = "";
+        $("aStreet").value = "";
+        $("aHouse").value = "";
+        $("aApt").value = "";
+      }
+
+      setMode("delivery");
+
+      checkoutModal.classList.remove("hidden");
+      lockScroll();
+    }
+    function closeCheckout(){
+      checkoutModal.classList.add("hidden");
+      unlockScroll();
+    }
+    $("xClose").onclick = closeCheckout;
+
+    function formatPhone(raw){
+      let d = (raw || "").replace(/\D/g, "");
+      if (d.startsWith("8")) d = "7" + d.slice(1);
+      if (d.startsWith("9")) d = "7" + d;
+      if (!d.startsWith("7")) d = "7" + d;
+      d = d.slice(0, 11);
+
+      const a = d.slice(1, 4);
+      const b = d.slice(4, 7);
+      const c = d.slice(7, 9);
+      const e = d.slice(9, 11);
+
+      let out = "+7";
+      if (a.length) out += " (" + a;
+      if (a.length === 3) out += ")";
+      if (b.length) out += " " + b;
+      if (c.length) out += "-" + c;
+      if (e.length) out += "-" + e;
+
+      return { formatted: out, digits: d };
+    }
+    $("cPhone").addEventListener("input", () => {
+      const f = formatPhone($("cPhone").value);
+      $("cPhone").value = f.formatted;
+    });
+
+    function clearErrors(){
+      ["eName","ePhone","eCity","eStreet","eHouse","eApt"].forEach(id => {
+        $(id).style.display = "none";
+        $(id).textContent = "";
+      });
+    }
+    function setErr(id, msg){
+      $(id).textContent = msg;
+      $(id).style.display = "block";
+    }
+    function genId(){ return String(Date.now()).slice(-6); }
+
+    $("sendOrder").onclick = () => {
+      clearErrors();
+
+      const name = ($("cName").value || "").trim();
+      const phoneInfo = formatPhone($("cPhone").value);
+
+      if (!name) setErr("eName", "Укажите имя");
+      if (phoneInfo.digits.length !== 11) setErr("ePhone", "Укажите телефон полностью");
+
+      let addr = { mode: checkoutState.mode };
+
+      if (checkoutState.mode === "delivery"){
+        const city = ($("aCity").value || "").trim();
+        const street = ($("aStreet").value || "").trim();
+        const house = ($("aHouse").value || "").trim();
+        const apt = ($("aApt").value || "").trim(); // ✅ необязательно
+
+        if (!city) setErr("eCity", "Укажите город");
+        if (!street) setErr("eStreet", "Укажите улицу");
+        if (!house) setErr("eHouse", "Укажите дом");
+
+        addr = { mode:"delivery", city, street, house, apt };
+      } else {
+        addr = { mode:"pickup" };
+      }
+
+      const any = ["eName","ePhone","eCity","eStreet","eHouse","eApt"].some(id => $(id).style.display === "block");
+      if (any) return;
+
+      const items = Object.entries(cart).map(([id, qty]) => {
+        const p = PRODUCTS.find(x=>x.id===id);
+        return { id, title: p?.title || id, price: p?.price || 0, qty };
+      });
+
+      const order = {
+        id: genId(),
+        status: "in_work",
+        created_at: new Date().toISOString(),
+        name,
+        phone: phoneInfo.formatted,
+        deliveryMode: addr.mode,
+        address: addr,
+        addressText: formatAddress(addr),
+        items,
+        total: cartTotal()
+      };
+
+      orders.unshift(order);
+      saveOrders();
+
+      activeId = order.id;
+      saveActive();
+
+      localStorage.setItem(LAST_PHONE_KEY, order.phone);
+      localStorage.setItem(LAST_ADDR_KEY, JSON.stringify(addr));
+
+      Object.keys(cart).forEach(k => delete cart[k]);
+      saveCart();
+      renderBadge();
+
+      tg?.sendData(JSON.stringify({ action:"order_in_work", order }));
+
+      formView.classList.add("hidden");
+      okView.classList.remove("hidden");
+    };
+
+    $("okBtn").onclick = () => {
+      closeCheckout();
+      showPage("profile");
+    };
+
+    function init(){
+      renderChips();
+      renderCatalog();
+      renderBadge();
+
+      const start = (location.hash || "#catalog").replace("#","");
+      showPage(["catalog","cart","profile"].includes(start) ? start : "catalog");
+    }
+
+    init();
+  </script>
+</body>
+</html>
