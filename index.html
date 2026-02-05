@@ -9,12 +9,16 @@
   <style>
     :root{
       --mint:#cfdad5;
-      --bg:#f1f5f3;
-      --ink:#111313;
-      --muted:#7b8480;
-      --shadow:0 10px 30px rgba(0,0,0,.08);
-      --red:#cf3b2f;
-      --btn:#b7c8c1;
+      --mint-deep:#9fb7ae;
+      --mint-dark:#2f3b36;
+      --bg:#e6eeea;
+      --surface:#d7e3de;
+      --surface-strong:#c6d6d0;
+      --ink:#1f2a27;
+      --muted:#5f6d67;
+      --shadow:0 14px 28px rgba(47,59,54,.18);
+      --red:#d23a2f;
+      --btn:var(--mint-deep);
     }
 
     *{box-sizing:border-box}
@@ -34,21 +38,11 @@
     .topbar{
       position:fixed; left:0; right:0; top:0; z-index:50;
       background:var(--mint);
-      border-bottom:1px solid rgba(0,0,0,.05);
+      border-bottom:1px solid rgba(47,59,54,.12);
       padding:14px 14px 12px;
       padding-top:calc(14px + env(safe-area-inset-top));
     }
-    .topgrid{position:relative; height:46px;}
-    .tbtn{
-      position:absolute; left:0; top:50%;
-      transform:translateY(-50%);
-      border:0; background:transparent;
-      padding:8px 6px;
-      font-size:18px; font-weight:500;
-      color:rgba(0,0,0,.65);
-      text-align:left;
-    }
-
+    .topgrid{position:relative; height:72px;}
     .brand{
       position:absolute; left:50%; top:50%;
       transform:translate(-50%,-50%);
@@ -58,34 +52,26 @@
     }
     .brand h1{
       margin:0;
-      font-size:38px;
+      font-size:34px;
       font-weight:800;
       letter-spacing:-.8px;
       position:relative;
-      color:rgba(0,0,0,.70);
+      color:var(--mint-dark);
       line-height:1;
     }
 
     /* ✅ МАЗОК КАК НА МАКЕТЕ: ДИАГОНАЛЬНО ПЕРЕЧЁРКИВАЕТ СЛОВО */
-    .brand h1::after{
-      content:"";
-      position:absolute;
-      left:-18px;
-      right:-18px;
-      top:50%;
-      height:26px;
-      transform:translateY(-50%) rotate(-10deg);
-      background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='220' viewBox='0 0 1200 220'%3E%3Cpath d='M70 150 C260 60 360 190 540 120 C720 50 860 170 1130 85' fill='none' stroke='%23cf3b2f' stroke-width='26' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M90 165 C280 90 370 200 560 145 C740 92 900 195 1110 125' fill='none' stroke='%23cf3b2f' stroke-width='14' stroke-linecap='round' stroke-linejoin='round' opacity='0.55'/%3E%3C/svg%3E")
-        center/100% 100% no-repeat;
-      opacity:.95;
-      pointer-events:none;
-      filter:saturate(1.05);
-    }
+    .brand h1::after{content:none;}
 
     .content{
       padding:18px 14px 20px;
-      padding-top:calc(18px + 46px + 14px + env(safe-area-inset-top));
+      padding-top:calc(18px + 72px + 14px + env(safe-area-inset-top));
+      padding-bottom:calc(20px + 92px + env(safe-area-inset-bottom));
+    }
+    .divider{
+      height:1px;
+      background:rgba(47,59,54,.18);
+      margin:8px 0 6px;
     }
 
     /* Chips */
@@ -98,71 +84,110 @@
       flex:0 0 auto;
       padding:10px 16px;
       border-radius:999px;
-      border:1px solid rgba(0,0,0,.08);
-      background:rgba(255,255,255,.55);
+      border:1px solid rgba(47,59,54,.14);
+      background:var(--surface);
       font-size:16px; font-weight:450;
-      color:rgba(0,0,0,.55);
+      color:var(--muted);
       letter-spacing:-.2px;
       user-select:none; white-space:nowrap;
     }
     .chip.on{
-      background:rgba(255,255,255,.78);
-      border-color:rgba(0,0,0,.10);
-      color:rgba(0,0,0,.75);
+      background:var(--mint-deep);
+      border-color:transparent;
+      color:var(--mint-dark);
       font-weight:600;
     }
 
     /* Catalog grid */
     .grid{
       display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px;
-      margin-top:6px;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:12px;
+      align-items:stretch;
+      margin-top:12px;
     }
 
     /* ✅ Обёртка: карточка + переключатель ПОД карточкой */
     .pWrap{display:flex; flex-direction:column;}
 
     .card{
-      background:rgba(255,255,255,.55);
-      border:1px solid rgba(0,0,0,.06);
+      background:var(--surface);
+      border:1px solid rgba(47,59,54,.12);
       border-radius:26px;
       overflow:hidden;
-      box-shadow:0 8px 22px rgba(0,0,0,.06);
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+      height:100%;
     }
-    .ph{
+    .cardMedia{
+      position:relative;
       aspect-ratio:1/1;
+      overflow:hidden;
+      background:linear-gradient(180deg, rgba(255,255,255,.45), rgba(47,59,54,.08));
+      flex:0 0 auto;
+    }
+    .cardImage{
+      position:absolute; inset:0;
       display:flex; align-items:center; justify-content:center;
-      background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(0,0,0,.03));
-      color:rgba(0,0,0,.45);
-      font-size:54px;
+      color:rgba(47,59,54,.45);
+      font-size:46px;
       font-weight:700;
       letter-spacing:-1px;
     }
 
     /* снизу карточки: только название + цена */
     .cardBody{
-      padding:12px 14px 12px;
-      background:rgba(255,255,255,.42);
-      border-top:1px solid rgba(0,0,0,.06);
+      padding:14px;
+      background:var(--surface-strong);
+      border-top:1px solid rgba(47,59,54,.12);
+      min-height:150px;
+      display:flex;
+      flex-direction:column;
+      flex:1 1 auto;
+    }
+    .priceRow{
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      margin-bottom:8px;
+      min-height:26px;
+    }
+    .priceNew{
+      font-size:20px;
+      font-weight:700;
+      color:var(--ink);
+      letter-spacing:-.2px;
     }
     .pTitle{
       margin:0 0 8px;
-      font-size:17px;
-      font-weight:450;
+      font-size:18px;
+      font-weight:600;
       letter-spacing:-.25px;
-      color:rgba(0,0,0,.70);
-      white-space:nowrap;
+      color:var(--ink);
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
       overflow:hidden;
-      text-overflow:ellipsis;
+      min-height:44px;
     }
-    .price{
-      font-size:17px;
-      font-weight:450;
+    .ctaBtn{
+      width:100%;
+      border:0;
+      border-radius:999px;
+      padding:12px 16px;
+      background:var(--mint-deep);
+      color:#fff;
+      font-size:16px;
+      font-weight:650;
       letter-spacing:-.2px;
-      color:rgba(0,0,0,.62);
-      white-space:nowrap;
-      line-height:1;
+      cursor:pointer;
+      margin-top:auto;
+    }
+    .ctaBtn.inCart{
+      background:transparent;
+      color:var(--muted);
+      border:1px solid rgba(47,59,54,.22);
     }
 
     /* ✅ Переключатель под карточкой, центр */
@@ -177,16 +202,16 @@
       gap:12px;
       padding:7px 10px;
       border-radius:999px;
-      background:rgba(255,255,255,.50);
-      border:1px solid rgba(0,0,0,.08);
+      background:var(--surface-strong);
+      border:1px solid rgba(47,59,54,.14);
     }
     .qbtn{
       width:34px;height:34px;
       border-radius:50%;
-      border:1px solid rgba(0,0,0,.08);
-      background:rgba(255,255,255,.70);
+      border:1px solid rgba(47,59,54,.12);
+      background:var(--surface);
       font-size:18px;
-      color:rgba(0,0,0,.50);
+      color:var(--muted);
       cursor:pointer;
       display:flex; align-items:center; justify-content:center;
     }
@@ -195,7 +220,7 @@
       min-width:18px;
       text-align:center;
       font-weight:650;
-      color:rgba(0,0,0,.60);
+      color:var(--ink);
       font-size:18px;
       letter-spacing:-.2px;
       line-height:1;
@@ -205,10 +230,10 @@
     .bottom{
       position:fixed; left:0; right:0; bottom:0;
       padding:12px 18px calc(14px + env(safe-area-inset-bottom));
-      background:rgba(255,255,255,.72);
+      background:rgba(207,218,213,.92);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-top:1px solid rgba(0,0,0,.06);
+      border-top:1px solid rgba(47,59,54,.12);
       z-index:60;
     }
     .nav{display:flex; justify-content:space-around; align-items:flex-end; gap:10px;}
@@ -216,28 +241,28 @@
       width:33.333%;
       text-align:center;
       text-decoration:none;
-      color:rgba(0,0,0,.42);
+      color:var(--muted);
       font-weight:500;
       font-size:14px;
       user-select:none;
       position:relative;
       padding:6px 0 4px;
     }
-    .tab .ico{display:block; margin:0 auto 6px; width:26px;height:26px; color:rgba(0,0,0,.42);}
+    .tab .ico{display:block; margin:0 auto 6px; width:26px;height:26px; color:var(--muted);}
     .tab svg{
       width:26px;height:26px;
       stroke:currentColor; fill:none;
       stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
     }
-    .tab.active{color:rgba(0,0,0,.72)}
-    .tab.active .ico{color:rgba(0,0,0,.65)}
+    .tab.active{color:var(--mint-dark)}
+    .tab.active .ico{color:var(--mint-dark)}
     .badge{
       position:absolute;
       top:0px; left:50%;
       transform:translate(8px,-6px);
       min-width:18px; height:18px; padding:0 6px;
       border-radius:999px;
-      background:rgba(0,0,0,.72); color:#fff;
+      background:var(--mint-deep); color:#1f2a27;
       font-weight:700; font-size:12px;
       display:flex; align-items:center; justify-content:center;
     }
@@ -250,17 +275,17 @@
       gap:12px;
       padding:14px;
       border-radius:22px;
-      background:rgba(255,255,255,.65);
-      border:1px solid rgba(0,0,0,.06);
-      box-shadow:0 8px 22px rgba(0,0,0,.06);
+      background:var(--surface);
+      border:1px solid rgba(47,59,54,.12);
+      box-shadow:var(--shadow);
       margin-bottom:14px;
     }
     .thumb{
       width:64px;height:64px;
       border-radius:14px;
-      background:linear-gradient(180deg, rgba(0,0,0,.06), rgba(0,0,0,.02));
+      background:linear-gradient(180deg, rgba(255,255,255,.35), rgba(47,59,54,.06));
       display:flex; align-items:center; justify-content:center;
-      color:rgba(0,0,0,.35);
+      color:var(--muted);
       font-weight:700;
       line-height:1.05;
       text-align:center;
@@ -271,20 +296,20 @@
     .ciTxt{min-width:0;}
     .ciName{
       font-size:18px; font-weight:500;
-      color:rgba(0,0,0,.72);
+      color:var(--ink);
       letter-spacing:-.2px;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       max-width:220px;
     }
-    .ciCat{margin-top:4px; font-size:15px; font-weight:450; color:rgba(0,0,0,.38); letter-spacing:-.2px;}
-    .ciPrice{margin-top:10px; font-size:18px; font-weight:450; color:rgba(0,0,0,.60); white-space:nowrap;}
+    .ciCat{margin-top:4px; font-size:15px; font-weight:450; color:var(--muted); letter-spacing:-.2px;}
+    .ciPrice{margin-top:10px; font-size:18px; font-weight:450; color:var(--muted); white-space:nowrap;}
     .totalRow{
       display:flex; justify-content:space-between; align-items:center;
       margin:18px 2px 14px;
       font-size:20px; font-weight:520;
-      color:rgba(0,0,0,.58); letter-spacing:-.2px;
+      color:var(--muted); letter-spacing:-.2px;
     }
-    .totalRow b{font-size:22px; font-weight:650; color:rgba(0,0,0,.70);}
+    .totalRow b{font-size:22px; font-weight:650; color:var(--ink);}
     .cta{
       width:100%;
       border:0; border-radius:999px;
@@ -300,19 +325,19 @@
       margin-top:30px;
       padding:34px 18px 26px;
       border-radius:26px;
-      background:rgba(255,255,255,.55);
-      border:1px solid rgba(0,0,0,.06);
+      background:var(--surface);
+      border:1px solid rgba(47,59,54,.12);
       text-align:center;
-      box-shadow:0 8px 22px rgba(0,0,0,.06);
+      box-shadow:var(--shadow);
     }
-    .leaf{width:58px;height:58px;margin:0 auto 16px;color:rgba(0,0,0,.28);}
-    .emptyTitle{font-size:22px;font-weight:520;color:rgba(0,0,0,.62);letter-spacing:-.2px;margin-bottom:10px;}
-    .emptySub{font-size:16px;font-weight:450;color:rgba(0,0,0,.40);letter-spacing:-.2px;margin-bottom:18px;}
+    .leaf{width:58px;height:58px;margin:0 auto 16px;color:var(--muted);}
+    .emptyTitle{font-size:22px;font-weight:520;color:var(--ink);letter-spacing:-.2px;margin-bottom:10px;}
+    .emptySub{font-size:16px;font-weight:450;color:var(--muted);letter-spacing:-.2px;margin-bottom:18px;}
     .ghostBtn{
       border:0; border-radius:999px;
       padding:14px 18px;
-      background:rgba(0,0,0,.08);
-      color:rgba(0,0,0,.45);
+      background:rgba(47,59,54,.12);
+      color:var(--muted);
       font-size:16px; font-weight:520;
       cursor:pointer;
     }
@@ -322,30 +347,30 @@
     .ava{
       width:110px;height:110px;margin:8px auto 14px;
       border-radius:999px;
-      background:rgba(0,0,0,.05);
-      border:1px solid rgba(0,0,0,.06);
+      background:rgba(255,255,255,.25);
+      border:1px solid rgba(47,59,54,.12);
       display:flex; align-items:center; justify-content:center;
       overflow:hidden;
     }
-    .ava svg{width:66px;height:66px;color:rgba(0,0,0,.30)}
-    .pName{font-size:30px;font-weight:520;color:rgba(0,0,0,.68);letter-spacing:-.4px;margin:0 0 6px;}
-    .pPhone{font-size:18px;font-weight:450;color:rgba(0,0,0,.45);letter-spacing:-.2px;margin:0 0 18px;}
+    .ava svg{width:66px;height:66px;color:var(--muted)}
+    .pName{font-size:30px;font-weight:520;color:var(--ink);letter-spacing:-.4px;margin:0 0 6px;}
+    .pPhone{font-size:18px;font-weight:450;color:var(--muted);letter-spacing:-.2px;margin:0 0 18px;}
 
     .panel{
-      background:rgba(255,255,255,.62);
-      border:1px solid rgba(0,0,0,.06);
+      background:var(--surface);
+      border:1px solid rgba(47,59,54,.12);
       border-radius:26px;
-      box-shadow:0 8px 22px rgba(0,0,0,.06);
+      box-shadow:var(--shadow);
       padding:18px;
       margin:14px 0;
     }
-    .panelTitle{font-size:22px;font-weight:520;color:rgba(0,0,0,.62);letter-spacing:-.2px;margin-bottom:12px;text-align:left;}
+    .panelTitle{font-size:22px;font-weight:520;color:var(--ink);letter-spacing:-.2px;margin-bottom:12px;text-align:left;}
     .statusPill{
       display:inline-flex; align-items:center;
       padding:10px 16px;
       border-radius:999px;
-      background:rgba(183,200,193,.95);
-      color:#fff;
+      background:var(--mint-deep);
+      color:#0e1311;
       font-weight:650;
       letter-spacing:-.2px;
       font-size:16px;
@@ -356,8 +381,8 @@
       gap:10px;
       padding:16px 16px;
       border-radius:18px;
-      background:rgba(0,0,0,.05);
-      color:rgba(0,0,0,.55);
+      background:rgba(47,59,54,.1);
+      color:var(--muted);
       font-size:18px;
       font-weight:450;
       letter-spacing:-.2px;
@@ -366,8 +391,8 @@
     }
     .rowLeft{display:flex; align-items:center; gap:10px; min-width:0;}
     .rowLeft span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;}
-    .rowIco{width:22px;height:22px; color:rgba(0,0,0,.35);}
-    .chev{width:18px;height:18px; color:rgba(0,0,0,.28);}
+    .rowIco{width:22px;height:22px; color:var(--muted);}
+    .chev{width:18px;height:18px; color:var(--muted);}
     .listBlock{margin-top:12px; display:flex; flex-direction:column; gap:14px;}
 
     /* Modal (checkout) */
@@ -383,9 +408,9 @@
     .sheet{
       width:min(560px, 100%);
       max-height:92vh;
-      background:rgba(255,255,255,.92);
+      background:var(--surface-strong);
       border-radius:26px;
-      border:1px solid rgba(0,0,0,.08);
+      border:1px solid rgba(47,59,54,.12);
       box-shadow:var(--shadow);
       overflow:hidden;
       display:flex;
@@ -398,15 +423,15 @@
       align-items:center;
       justify-content:space-between;
       gap:10px;
-      border-bottom:1px solid rgba(0,0,0,.05);
+      border-bottom:1px solid rgba(47,59,54,.12);
     }
-    .sheetTitle{font-size:18px;font-weight:650;color:rgba(0,0,0,.62);letter-spacing:-.2px;}
+    .sheetTitle{font-size:18px;font-weight:650;color:var(--ink);letter-spacing:-.2px;}
     .xbtn{
       width:40px;height:40px;
       border-radius:14px;
       border:0;
       background:rgba(255,255,255,.35);
-      color:rgba(0,0,0,.55);
+      color:var(--muted);
       font-size:20px;
     }
     .sheetBody{
@@ -419,7 +444,7 @@
       display:block;
       font-size:14px;
       font-weight:520;
-      color:rgba(0,0,0,.55);
+      color:var(--muted);
       margin:0 0 8px;
       letter-spacing:-.2px;
     }
@@ -427,11 +452,11 @@
       width:100%;
       padding:14px 14px;
       border-radius:18px;
-      border:1px solid rgba(0,0,0,.10);
-      background:rgba(255,255,255,.75);
+      border:1px solid rgba(47,59,54,.12);
+      background:rgba(255,255,255,.45);
       font-size:16px;
       outline:none;
-      color:rgba(0,0,0,.72);
+      color:var(--ink);
     }
     .field{margin-bottom:14px;}
     .err{
@@ -444,7 +469,7 @@
     }
     .sheetFoot{
       padding:12px 16px 16px;
-      border-top:1px solid rgba(0,0,0,.06);
+      border-top:1px solid rgba(47,59,54,.12);
       background:transparent;
     }
     .send{
@@ -464,22 +489,24 @@
     .pill{
       flex:1;
       border-radius:999px;
-      border:1px solid rgba(0,0,0,.10);
-      background:rgba(255,255,255,.60);
+      border:1px solid rgba(47,59,54,.12);
+      background:var(--surface);
       padding:12px 12px;
       font-size:16px;
       font-weight:520;
-      color:rgba(0,0,0,.55);
+      color:var(--muted);
       text-align:center;
       cursor:pointer;
       user-select:none;
     }
     .pill.on{
-      background:rgba(183,200,193,.95);
-      color:#fff;
+      background:var(--mint-deep);
+      color:var(--mint-dark);
       border-color:rgba(0,0,0,.06);
       font-weight:650;
     }
+    #okView > div:first-child{color:var(--ink)!important;}
+    #okView > div:nth-child(2){color:var(--muted)!important;}
 
     @media (max-width:360px){
       .grid{grid-template-columns:1fr}
@@ -493,13 +520,15 @@
   <div class="app">
     <div class="topbar">
       <div class="topgrid">
-        <button class="tbtn" id="closeBtn">Закрыть</button>
-        <div class="brand"><h1>Ne buket</h1></div>
+        <div class="brand">
+          <h1>Ne buket</h1>
+        </div>
       </div>
     </div>
 
     <div class="content">
       <section id="page-catalog">
+        <div class="divider"></div>
         <div class="chips" id="chips"></div>
         <div class="grid" id="grid"></div>
       </section>
@@ -566,14 +595,15 @@
               <path d="M4 17h16"></path>
             </svg>
           </span>
-          Каталог
+          Меню
         </a>
 
         <a class="tab" href="#cart" id="tab-cart">
           <span class="ico" aria-hidden="true">
             <svg viewBox="0 0 24 24">
-              <path d="M7 9h10l-1 11H8L7 9Z"></path>
-              <path d="M9 9a3 3 0 0 1 6 0"></path>
+              <path d="M6 8h12l-1 11H7L6 8Z"></path>
+              <path d="M9 8a3 3 0 0 1 6 0"></path>
+              <path d="M9 12h6"></path>
             </svg>
           </span>
           Корзина
@@ -667,16 +697,16 @@
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
-    document.getElementById("closeBtn").onclick = () => tg?.close();
 
-    const CATEGORIES = ["Все","Охапки","Сеты","Зелень"];
-    const PRODUCTS = Array.from({length: 12}).map((_, i) => ({
-      id: "p" + (i+1),
-      title: "Название товара " + (i+1),
-      price: 1500 + i * 220,
-      cat: CATEGORIES[1 + (i % (CATEGORIES.length - 1))],
-      ph: (i+1)
-    }));
+    const CATEGORIES = ["Все","Цветы","Зелень","Ветки"];
+    const PRODUCTS = [
+      { id:"p1", title:"Еще один букет", price:2000, cat:"Ветки" },
+      { id:"p2", title:"Красивый букет", price:1000, cat:"Цветы" },
+      { id:"p3", title:"Сет роз", price:1800, cat:"Цветы" },
+      { id:"p4", title:"Зелень микс", price:900, cat:"Зелень" },
+      { id:"p5", title:"Луговой букет", price:2200, cat:"Цветы" },
+      { id:"p6", title:"Ветки декоративные", price:1400, cat:"Ветки" }
+    ];
 
     const CART_KEY = "nebuket_cart_v4";
     const ORDERS_KEY = "nebuket_orders_v4";
@@ -748,40 +778,38 @@
     function renderCatalog(){
       const list = PRODUCTS.filter(p => state.cat === "Все" || p.cat === state.cat);
 
-      $("grid").innerHTML = list.map(p => `
-        <div class="pWrap">
-          <div class="card">
-            <div class="ph">${p.ph}</div>
-            <div class="cardBody">
-              <p class="pTitle" title="${p.title}">${p.title}</p>
-              <div class="price">${formatMoney(p.price)}</div>
+      $("grid").innerHTML = list.map(p => {
+        const inCart = qtyOf(p.id) > 0;
+        return `
+          <div class="pWrap">
+            <div class="card">
+              <div class="cardMedia">
+                <div class="cardImage">${String(p.title).slice(0,2).toUpperCase()}</div>
+              </div>
+              <div class="cardBody">
+                <div class="priceRow">
+                  <div class="priceNew">${formatMoney(p.price)}</div>
+                </div>
+                <p class="pTitle" title="${p.title}">${p.title}</p>
+                <button class="ctaBtn ${inCart ? "inCart" : ""}" data-add="${p.id}">
+                  ${inCart ? "В корзине" : "В корзину"}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div class="qtyUnder">
-            <div class="qtyPill">
-              <button class="qbtn" data-dec="${p.id}" ${qtyOf(p.id)===0 ? "disabled":""}>–</button>
-              <div class="qnum">${qtyOf(p.id)}</div>
-              <button class="qbtn" data-inc="${p.id}">+</button>
-            </div>
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
 
       $("grid").onclick = (e) => {
         const btn = e.target.closest("button"); if(!btn) return;
-        const inc = btn.dataset.inc;
-        const dec = btn.dataset.dec;
+        const add = btn.dataset.add;
 
-        if (inc){
-          cart[inc] = (cart[inc] || 0) + 1;
-          saveCart();
-          renderCatalog();
-          renderBadge();
-        }
-        if (dec){
-          cart[dec] = (cart[dec] || 0) - 1;
-          if (cart[dec] <= 0) delete cart[dec];
+        if (add){
+          if (qtyOf(add) > 0){
+            showPage("cart");
+            return;
+          }
+          cart[add] = (cart[add] || 0) + 1;
           saveCart();
           renderCatalog();
           renderBadge();
@@ -920,6 +948,7 @@
         alert(lastAddr ? `Последний адрес:\n${formatAddress(lastAddr)}` : "Пока нет сохранённых адресов.");
       };
     }
+
 
     /* Checkout modal */
     const checkoutModal = $("checkoutModal");
