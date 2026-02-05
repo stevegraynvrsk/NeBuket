@@ -42,17 +42,7 @@
       padding:14px 14px 12px;
       padding-top:calc(14px + env(safe-area-inset-top));
     }
-    .topgrid{position:relative; height:88px;}
-    .tbtn{
-      position:absolute; left:0; top:50%;
-      transform:translateY(-50%);
-      border:0; background:transparent;
-      padding:8px 6px;
-      font-size:18px; font-weight:500;
-      color:var(--mint-dark);
-      text-align:left;
-    }
-
+    .topgrid{position:relative; height:72px;}
     .brand{
       position:absolute; left:50%; top:50%;
       transform:translate(-50%,-50%);
@@ -60,29 +50,9 @@
       width:100%;
       pointer-events:none;
     }
-    .brandStack{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:6px;
-    }
-    .brandStack .miniTitle{
-      font-size:22px;
-      font-weight:650;
-      color:var(--ink);
-      letter-spacing:-.3px;
-      margin:0;
-    }
-    .brandStack .miniSub{
-      font-size:14px;
-      font-weight:500;
-      color:var(--muted);
-      letter-spacing:-.2px;
-      margin:0;
-    }
     .brand h1{
       margin:0;
-      font-size:28px;
+      font-size:34px;
       font-weight:800;
       letter-spacing:-.8px;
       position:relative;
@@ -91,25 +61,11 @@
     }
 
     /* ✅ МАЗОК КАК НА МАКЕТЕ: ДИАГОНАЛЬНО ПЕРЕЧЁРКИВАЕТ СЛОВО */
-    .brand h1::after{
-      content:"";
-      position:absolute;
-      left:-26px;
-      right:-26px;
-      top:50%;
-      height:22px;
-      transform:translateY(-50%) rotate(-12deg);
-      background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='220' viewBox='0 0 1200 220'%3E%3Cpath d='M60 158 C240 62 360 198 540 118 C730 34 880 188 1140 88' fill='none' stroke='%23d23a2f' stroke-width='30' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M86 170 C270 100 380 206 560 146 C740 96 910 198 1108 130' fill='none' stroke='%23d23a2f' stroke-width='16' stroke-linecap='round' stroke-linejoin='round' opacity='0.65'/%3E%3C/svg%3E")
-        center/100% 100% no-repeat;
-      opacity:.95;
-      pointer-events:none;
-      filter:saturate(1.1) contrast(1.05);
-    }
+    .brand h1::after{content:none;}
 
     .content{
       padding:18px 14px 20px;
-      padding-top:calc(18px + 88px + 14px + env(safe-area-inset-top));
+      padding-top:calc(18px + 72px + 14px + env(safe-area-inset-top));
     }
     .divider{
       height:1px;
@@ -133,11 +89,7 @@
       color:var(--muted);
       letter-spacing:-.2px;
       user-select:none; white-space:nowrap;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
     }
-    .chip svg{width:18px;height:18px; stroke:currentColor; fill:none; stroke-width:1.6;}
     .chip.on{
       background:var(--mint-deep);
       border-color:transparent;
@@ -177,26 +129,6 @@
       font-weight:700;
       letter-spacing:-1px;
     }
-    .favBtn{
-      position:absolute; top:12px; right:12px;
-      width:38px; height:38px;
-      border-radius:50%;
-      border:1px solid rgba(47,59,54,.16);
-      background:rgba(230,238,234,.8);
-      display:flex; align-items:center; justify-content:center;
-      color:rgba(47,59,54,.55);
-      font-size:20px;
-    }
-    .tagPill{
-      position:absolute; left:12px; bottom:12px;
-      padding:6px 12px;
-      border-radius:999px;
-      background:var(--mint-deep);
-      color:var(--mint-dark);
-      font-weight:650;
-      font-size:13px;
-      letter-spacing:-.2px;
-    }
 
     /* снизу карточки: только название + цена */
     .cardBody{
@@ -215,12 +147,6 @@
       font-weight:700;
       color:var(--ink);
       letter-spacing:-.2px;
-    }
-    .priceOld{
-      font-size:16px;
-      font-weight:500;
-      color:var(--muted);
-      text-decoration:line-through;
     }
     .pTitle{
       margin:0 0 4px;
@@ -243,7 +169,7 @@
       border:0;
       border-radius:999px;
       padding:12px 16px;
-      background:#6b77f0;
+      background:var(--mint-dark);
       color:#fff;
       font-size:16px;
       font-weight:650;
@@ -304,7 +230,7 @@
     }
     .nav{display:flex; justify-content:space-around; align-items:flex-end; gap:10px;}
     .tab{
-      width:25%;
+      width:33.333%;
       text-align:center;
       text-decoration:none;
       color:var(--muted);
@@ -586,13 +512,8 @@
   <div class="app">
     <div class="topbar">
       <div class="topgrid">
-        <button class="tbtn" id="closeBtn">Закрыть</button>
         <div class="brand">
-          <div class="brandStack">
-            <div class="miniTitle">BotFather</div>
-            <div class="miniSub">мини-приложение</div>
-            <h1>Ne buket</h1>
-          </div>
+          <h1>Ne buket</h1>
         </div>
       </div>
     </div>
@@ -606,14 +527,6 @@
 
       <section id="page-cart" class="hidden">
         <div class="cartWrap" id="cartWrap"></div>
-      </section>
-
-      <section id="page-favorites" class="hidden">
-        <div class="emptyBox">
-          <div class="emptyTitle">Избранное пустое</div>
-          <div class="emptySub">Добавьте товары из меню.</div>
-          <button class="ghostBtn" id="toCatalogFav">В меню</button>
-        </div>
       </section>
 
       <section id="page-profile" class="hidden">
@@ -680,21 +593,13 @@
         <a class="tab" href="#cart" id="tab-cart">
           <span class="ico" aria-hidden="true">
             <svg viewBox="0 0 24 24">
-              <path d="M7 9h10l-1 11H8L7 9Z"></path>
-              <path d="M9 9a3 3 0 0 1 6 0"></path>
+              <path d="M6 8h12l-1 11H7L6 8Z"></path>
+              <path d="M9 8a3 3 0 0 1 6 0"></path>
+              <path d="M9 12h6"></path>
             </svg>
           </span>
           Корзина
           <span class="badge hidden" id="badge">0</span>
-        </a>
-
-        <a class="tab" href="#favorites" id="tab-favorites">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 21s-7-4.6-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.4-7 10-7 10Z"></path>
-            </svg>
-          </span>
-          Избранное
         </a>
 
         <a class="tab" href="#profile" id="tab-profile">
@@ -784,16 +689,15 @@
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
-    document.getElementById("closeBtn").onclick = () => tg?.close();
 
     const CATEGORIES = ["Все","Цветы","Зелень","Ветки"];
     const PRODUCTS = [
-      { id:"p1", title:"Еще один букет", price:2000, oldPrice:5000, cat:"Ветки", tag:"Акция" },
-      { id:"p2", title:"Красивый букет", price:1000, oldPrice:1500, cat:"Цветы", tag:"Хит" },
-      { id:"p3", title:"Сет роз", price:1800, oldPrice:2300, cat:"Цветы", tag:"Хит" },
-      { id:"p4", title:"Зелень микс", price:900, oldPrice:1200, cat:"Зелень", tag:"Акция" },
-      { id:"p5", title:"Луговой букет", price:2200, oldPrice:2600, cat:"Цветы", tag:"Хит" },
-      { id:"p6", title:"Ветки декоративные", price:1400, oldPrice:1800, cat:"Ветки", tag:"Акция" }
+      { id:"p1", title:"Еще один букет", price:2000, cat:"Ветки" },
+      { id:"p2", title:"Красивый букет", price:1000, cat:"Цветы" },
+      { id:"p3", title:"Сет роз", price:1800, cat:"Цветы" },
+      { id:"p4", title:"Зелень микс", price:900, cat:"Зелень" },
+      { id:"p5", title:"Луговой букет", price:2200, cat:"Цветы" },
+      { id:"p6", title:"Ветки декоративные", price:1400, cat:"Ветки" }
     ];
 
     const CART_KEY = "nebuket_cart_v4";
@@ -836,8 +740,8 @@
     }
 
     /* Navigation */
-    const pages = { catalog: $("page-catalog"), cart: $("page-cart"), favorites: $("page-favorites"), profile: $("page-profile") };
-    const tabs = { catalog: $("tab-catalog"), cart: $("tab-cart"), favorites: $("tab-favorites"), profile: $("tab-profile") };
+    const pages = { catalog: $("page-catalog"), cart: $("page-cart"), profile: $("page-profile") };
+    const tabs = { catalog: $("tab-catalog"), cart: $("tab-cart"), profile: $("tab-profile") };
 
     function showPage(name){
       Object.keys(pages).forEach(k => pages[k].classList.toggle("hidden", k !== name));
@@ -852,17 +756,8 @@
     /* Chips */
     const state = { cat: "Все" };
     function renderChips(){
-      const chipIcon = (c) => {
-        if (c === "Все") return `<svg viewBox="0 0 24 24"><path d="M4 5h6v6H4z"></path><path d="M14 5h6v6h-6z"></path><path d="M4 13h6v6H4z"></path><path d="M14 13h6v6h-6z"></path></svg>`;
-        if (c === "Цветы") return `<svg viewBox="0 0 24 24"><path d="M12 3c1.5 2 1.5 5 0 7-1.5-2-1.5-5 0-7Z"></path><path d="M5 10c2 1.5 5 1.5 7 0-2-1.5-5-1.5-7 0Z"></path><path d="M12 14c1.5 2 1.5 5 0 7-1.5-2-1.5-5 0-7Z"></path><path d="M19 10c-2 1.5-5 1.5-7 0 2-1.5 5-1.5 7 0Z"></path><circle cx="12" cy="12" r="2"></circle></svg>`;
-        if (c === "Зелень") return `<svg viewBox="0 0 24 24"><path d="M6 18c8 0 12-6 12-12-6 0-12 4-12 12Z"></path></svg>`;
-        return `<svg viewBox="0 0 24 24"><path d="M6 6c6 0 12 6 12 12-6 0-12-6-12-12Z"></path><path d="M6 6c0 6 6 12 12 12"></path></svg>`;
-      };
       $("chips").innerHTML = CATEGORIES.map(c => `
-        <button class="chip ${state.cat===c ? "on":""}" data-cat="${c}">
-          ${chipIcon(c)}
-          <span>${c}</span>
-        </button>
+        <button class="chip ${state.cat===c ? "on":""}" data-cat="${c}">${c}</button>
       `).join("");
       $("chips").onclick = (e) => {
         const b = e.target.closest("button"); if(!b) return;
@@ -882,13 +777,10 @@
             <div class="card">
               <div class="cardMedia">
                 <div class="cardImage">${String(p.title).slice(0,2).toUpperCase()}</div>
-                <button class="favBtn" aria-label="В избранное">♡</button>
-                ${p.tag ? `<div class="tagPill">${p.tag}</div>` : ""}
               </div>
               <div class="cardBody">
                 <div class="priceRow">
                   <div class="priceNew">${formatMoney(p.price)}</div>
-                  ${p.oldPrice ? `<div class="priceOld">${formatMoney(p.oldPrice)}</div>` : ""}
                 </div>
                 <p class="pTitle" title="${p.title}">${p.title}</p>
                 <div class="pCat">${p.cat}</div>
@@ -1050,9 +942,6 @@
       };
     }
 
-    function initFavorites(){
-      $("toCatalogFav").onclick = () => showPage("catalog");
-    }
 
     /* Checkout modal */
     const checkoutModal = $("checkoutModal");
@@ -1244,10 +1133,9 @@
       renderChips();
       renderCatalog();
       renderBadge();
-      initFavorites();
 
       const start = (location.hash || "#catalog").replace("#","");
-      showPage(["catalog","cart","favorites","profile"].includes(start) ? start : "catalog");
+      showPage(["catalog","cart","profile"].includes(start) ? start : "catalog");
     }
 
     init();
