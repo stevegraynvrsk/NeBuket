@@ -11,23 +11,29 @@
       --mint:#cfdad5;
       --mint-deep:#9fb7ae;
       --mint-dark:#2f3b36;
-      --bg:#e6eeea;
-      --surface:#d7e3de;
-      --surface-strong:#c6d6d0;
-      --ink:#1f2a27;
-      --muted:#5f6d67;
-      --shadow:0 14px 28px rgba(47,59,54,.18);
+      --bg:#0e0d12;
+      --surface:rgba(255,255,255,.08);
+      --surface-strong:rgba(255,255,255,.12);
+      --ink:#f6f2f8;
+      --muted:#c8c1d0;
+      --shadow:0 18px 34px rgba(0,0,0,.55);
       --red:#d23a2f;
-      --btn:var(--mint-deep);
+      --btn:#4b46ff;
+      --font-display:"SF Pro Display", "SF Pro Text", -apple-system, system-ui, "Inter", Segoe UI, Roboto, Arial;
+      --font-text:"SF Pro Text", "SF Pro Display", -apple-system, system-ui, "Inter", Segoe UI, Roboto, Arial;
     }
 
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family: var(--font-text);
       color:var(--ink);
-      background:var(--bg);
+      background:
+        radial-gradient(120% 90% at 20% 20%, rgba(255,90,90,.22), transparent 55%),
+        radial-gradient(120% 90% at 80% 35%, rgba(117,90,255,.22), transparent 60%),
+        radial-gradient(110% 80% at 50% 80%, rgba(255,145,85,.18), transparent 60%),
+        var(--bg);
       -webkit-text-size-adjust:100%;
     }
 
@@ -37,8 +43,10 @@
     /* TOPBAR */
     .topbar{
       position:fixed; left:0; right:0; top:0; z-index:50;
-      background:var(--mint);
-      border-bottom:1px solid rgba(47,59,54,.12);
+      background:rgba(14,13,18,.7);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
       padding:14px 14px 12px;
       padding-top:calc(14px + env(safe-area-inset-top));
     }
@@ -52,12 +60,13 @@
     }
     .brand h1{
       margin:0;
-      font-size:34px;
+      font-size:36px;
       font-weight:800;
       letter-spacing:-.8px;
       position:relative;
-      color:var(--mint-dark);
+      color:var(--ink);
       line-height:1;
+      font-family: var(--font-display);
     }
 
     /* ✅ МАЗОК КАК НА МАКЕТЕ: ДИАГОНАЛЬНО ПЕРЕЧЁРКИВАЕТ СЛОВО */
@@ -70,7 +79,7 @@
     }
     .divider{
       height:1px;
-      background:rgba(47,59,54,.18);
+      background:rgba(255,255,255,.12);
       margin:8px 0 6px;
     }
 
@@ -84,17 +93,19 @@
       flex:0 0 auto;
       padding:10px 16px;
       border-radius:999px;
-      border:1px solid rgba(47,59,54,.14);
-      background:var(--surface);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
       font-size:16px; font-weight:450;
       color:var(--muted);
       letter-spacing:-.2px;
       user-select:none; white-space:nowrap;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
     .chip.on{
-      background:var(--mint-deep);
+      background:rgba(123,108,255,.95);
       border-color:transparent;
-      color:var(--mint-dark);
+      color:#fff;
       font-weight:600;
     }
 
@@ -112,10 +123,12 @@
 
     .card{
       background:var(--surface);
-      border:1px solid rgba(47,59,54,.12);
-      border-radius:26px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:28px;
       overflow:hidden;
       box-shadow:var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       display:flex;
       flex-direction:column;
       height:100%;
@@ -124,13 +137,13 @@
       position:relative;
       aspect-ratio:1/1;
       overflow:hidden;
-      background:linear-gradient(180deg, rgba(255,255,255,.45), rgba(47,59,54,.08));
+      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.2));
       flex:0 0 auto;
     }
     .cardImage{
       position:absolute; inset:0;
       display:flex; align-items:center; justify-content:center;
-      color:rgba(47,59,54,.45);
+      color:rgba(255,255,255,.35);
       font-size:46px;
       font-weight:700;
       letter-spacing:-1px;
@@ -140,7 +153,7 @@
     .cardBody{
       padding:14px;
       background:var(--surface-strong);
-      border-top:1px solid rgba(47,59,54,.12);
+      border-top:1px solid rgba(255,255,255,.1);
       min-height:150px;
       display:flex;
       flex-direction:column;
@@ -155,14 +168,15 @@
     }
     .priceNew{
       font-size:20px;
-      font-weight:700;
+      font-weight:400;
       color:var(--ink);
       letter-spacing:-.2px;
+      font-family: var(--font-text);
     }
     .pTitle{
       margin:0 0 8px;
       font-size:18px;
-      font-weight:600;
+      font-weight:400;
       letter-spacing:-.25px;
       color:var(--ink);
       display:-webkit-box;
@@ -170,13 +184,14 @@
       -webkit-box-orient:vertical;
       overflow:hidden;
       min-height:44px;
+      font-family: var(--font-text);
     }
     .ctaBtn{
       width:100%;
       border:0;
       border-radius:999px;
       padding:12px 16px;
-      background:var(--mint-deep);
+      background:linear-gradient(135deg, #6c63ff, #514bff);
       color:#fff;
       font-size:16px;
       font-weight:650;
@@ -185,9 +200,9 @@
       margin-top:auto;
     }
     .ctaBtn.inCart{
-      background:transparent;
-      color:var(--muted);
-      border:1px solid rgba(47,59,54,.22);
+      background:linear-gradient(135deg, #2d2a4d, #3a375f);
+      color:#ffffff;
+      border:1px solid rgba(255,255,255,.2);
     }
 
     /* ✅ Переключатель под карточкой, центр */
@@ -230,10 +245,10 @@
     .bottom{
       position:fixed; left:0; right:0; bottom:0;
       padding:12px 18px calc(14px + env(safe-area-inset-bottom));
-      background:rgba(207,218,213,.92);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-top:1px solid rgba(47,59,54,.12);
+      background:rgba(14,13,18,.72);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-top:1px solid rgba(255,255,255,.08);
       z-index:60;
     }
     .nav{display:flex; justify-content:space-around; align-items:flex-end; gap:10px;}
@@ -241,28 +256,29 @@
       width:33.333%;
       text-align:center;
       text-decoration:none;
-      color:var(--muted);
-      font-weight:500;
+      color:rgba(255,255,255,.55);
+      font-weight:600;
       font-size:14px;
       user-select:none;
       position:relative;
       padding:6px 0 4px;
+      font-family: var(--font-text);
     }
-    .tab .ico{display:block; margin:0 auto 6px; width:26px;height:26px; color:var(--muted);}
+    .tab .ico{display:block; margin:0 auto 6px; width:26px;height:26px; color:rgba(255,255,255,.55);}
     .tab svg{
       width:26px;height:26px;
       stroke:currentColor; fill:none;
       stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
     }
-    .tab.active{color:var(--mint-dark)}
-    .tab.active .ico{color:var(--mint-dark)}
+    .tab.active{color:#ffffff}
+    .tab.active .ico{color:#ffffff}
     .badge{
       position:absolute;
       top:0px; left:50%;
       transform:translate(8px,-6px);
       min-width:18px; height:18px; padding:0 6px;
       border-radius:999px;
-      background:var(--mint-deep); color:#1f2a27;
+      background:#6c63ff; color:#fff;
       font-weight:700; font-size:12px;
       display:flex; align-items:center; justify-content:center;
     }
@@ -886,6 +902,7 @@
           cart[inc] = (cart[inc] || 0) + 1;
           saveCart();
           renderCart();
+          renderCatalog();
           renderBadge();
         }
         if (dec){
@@ -893,6 +910,7 @@
           if (cart[dec] <= 0) delete cart[dec];
           saveCart();
           renderCart();
+          renderCatalog();
           renderBadge();
         }
       };
