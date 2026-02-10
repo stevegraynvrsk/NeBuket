@@ -71,7 +71,6 @@
         const { useState, useEffect, useRef } = React;
 
         // --- ICONS ---
-        // Исправлены иконки для стабильной работы
         const Icon = ({ path, size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
@@ -250,53 +249,37 @@
             };
 
             const renderCatalog = () => (
-                <div className="pb-28 px-4 pt-6 space-y-6 animate-in fade-in duration-500">
-                    <div className="flex justify-between items-start mb-4">
-                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-500 to-pink-600 p-[2px]">
-                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" className="w-full h-full rounded-full object-cover border-2 border-black" alt="avatar" />
-                            </div>
-                            <div>
-                                <h2 className="text-sm font-bold text-white leading-tight">Jonbella <span className="text-white/50 font-normal">Soul note</span></h2>
-                                <p className="text-xs text-red-400">Online</p>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-glass flex items-center justify-center backdrop-blur-md">
-                            <Icons.Bell size={20} />
-                        </div>
-                    </div>
-
-                    <div className="mb-8">
-                         <h1 className="text-4xl font-bold text-white mb-2">Perfect!</h1>
-                         <p className="text-white/60 text-sm max-w-[250px]">I look forward to giving emotions, few things you creating together.</p>
+                <div className="pb-28 px-4 pt-8 space-y-6 animate-in fade-in duration-500">
+                    <div className="flex justify-between items-center mb-6">
+                         <h1 className="text-4xl font-bold text-white tracking-tight">Ne buket</h1>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        {PRODUCTS.map(product => (
-                            <GlassCard key={product.id} className="p-0 overflow-hidden group active:scale-95 transition-transform duration-200 border-none bg-glass/20">
-                                <div className="relative aspect-[3/4]">
-                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                                    <div className="absolute bottom-0 left-0 w-full p-4">
-                                        <h3 className="font-bold text-white text-sm mb-1">{product.name}</h3>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-white/90 font-medium">{product.price.toLocaleString()} ₽</span>
-                                            {cart[product.id] ? (
-                                                <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
-                                                    <button onClick={(e) => {e.stopPropagation(); removeFromCart(product.id)}} className="text-white"><Icons.Minus size={14}/></button>
-                                                    <span className="text-xs font-bold">{cart[product.id]}</span>
-                                                    <button onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} className="text-white"><Icons.Plus size={14}/></button>
-                                                </div>
-                                            ) : (
-                                                <button onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} className="bg-white/20 hover:bg-white/40 p-2 rounded-full backdrop-blur-md transition-colors">
-                                                    <Icons.Plus size={16} className="text-white" />
-                                                </button>
-                                            )}
-                                        </div>
+                        {PRODUCTS.map(product => {
+                            const inCart = !!cart[product.id];
+                            return (
+                                <div key={product.id} className="relative rounded-[32px] overflow-hidden aspect-[3/5] group active:scale-95 transition-transform duration-200 shadow-2xl">
+                                    {/* Full Background Image */}
+                                    <img src={product.image} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+                                    
+                                    {/* Uniform Gradient Overlay - No hard lines */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+                                    
+                                    {/* Content Overlay */}
+                                    <div className="absolute bottom-0 left-0 w-full p-4 flex flex-col justify-end h-full">
+                                        <h3 className="font-bold text-white text-lg leading-tight mb-1">{product.name}</h3>
+                                        <span className="text-white/90 font-medium text-xl mb-3">{product.price.toLocaleString()} ₽</span>
+                                        
+                                        <button 
+                                            onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} 
+                                            className={`w-full py-3 rounded-2xl font-bold text-sm backdrop-blur-md transition-all duration-300 ${inCart ? 'bg-white text-black shadow-lg' : 'bg-white/20 text-white hover:bg-white/30 border border-white/10'}`}
+                                        >
+                                            {inCart ? 'В корзине' : 'В корзину'}
+                                        </button>
                                     </div>
                                 </div>
-                            </GlassCard>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             );
