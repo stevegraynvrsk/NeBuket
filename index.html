@@ -1,1169 +1,566 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Ne buket</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+import React, { useState, useEffect, useRef } from 'react';
+import { ShoppingBag, User, Home, Plus, Minus, X, ArrowLeft, MapPin, Phone, CreditCard, Package, Truck, Check } from 'lucide-react';
 
-  <style>
-    :root{
-      --mint:#cfdad5;
-      --mint-deep:#9fb7ae;
-      --mint-dark:#2f3b36;
-      --bg:#0e0d12;
-      --surface:rgba(255,255,255,.08);
-      --surface-strong:rgba(255,255,255,.12);
-      --ink:#f6f2f8;
-      --muted:#c8c1d0;
-      --shadow:0 18px 34px rgba(0,0,0,.55);
-      --red:#d23a2f;
-      --btn:#4b46ff;
-      --font-display:"SF Pro Display", "SF Pro Text", -apple-system, system-ui, "Inter", Segoe UI, Roboto, Arial;
-      --font-text:"SF Pro Text", "SF Pro Display", -apple-system, system-ui, "Inter", Segoe UI, Roboto, Arial;
-    }
+// --- MOCK DATA & CONSTANTS ---
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: var(--font-text);
-      color:var(--ink);
-      background:
-        radial-gradient(120% 90% at 20% 20%, rgba(255,90,90,.22), transparent 55%),
-        radial-gradient(120% 90% at 80% 35%, rgba(117,90,255,.22), transparent 60%),
-        radial-gradient(110% 80% at 50% 80%, rgba(255,145,85,.18), transparent 60%),
-        var(--bg);
-      -webkit-text-size-adjust:100%;
-    }
+const PRODUCTS = [
+  { id: 1, name: 'Пионовый Закат', price: 4500, image: 'https://images.unsplash.com/photo-1563241527-3004b7be025b?auto=format&fit=crop&q=80&w=800' },
+  { id: 2, name: 'Нежная Роза', price: 3200, image: 'https://images.unsplash.com/photo-1582794543139-8ac5ea5a01f6?auto=format&fit=crop&q=80&w=800' },
+  { id: 3, name: 'Дикий Луг', price: 2800, image: 'https://images.unsplash.com/photo-1494336934272-f0efcedfc8d7?auto=format&fit=crop&q=80&w=800' },
+  { id: 4, name: 'Королевский Синий', price: 5600, image: 'https://images.unsplash.com/photo-1562690868-60bbe7621e6c?auto=format&fit=crop&q=80&w=800' },
+  { id: 5, name: 'Белое Облако', price: 4100, image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&q=80&w=800' },
+];
 
-    .app{min-height:100vh; padding-bottom:92px; width:100%; overflow-x:hidden;}
-    .hidden{display:none!important;}
+const PACKAGING_OPTIONS = [
+  { id: 'transport', name: 'Транспортировочная', price: 0, desc: 'Для доставки' },
+  { id: 'craft', name: 'Крафт-бумага', price: 0, desc: 'Эко-минимализм' },
+  { id: 'box', name: 'Коробка-чемодан', price: 400, desc: 'С ручкой + уход' },
+];
 
-    /* TOPBAR */
-    .topbar{
-      position:fixed; left:0; right:0; top:0; z-index:50;
-      background:rgba(14,13,18,.7);
-      border-bottom:1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      padding:14px 14px 12px;
-      padding-top:calc(14px + env(safe-area-inset-top));
-    }
-    .topgrid{position:relative; height:72px;}
-    .brand{
-      position:absolute; left:50%; top:50%;
-      transform:translate(-50%,-50%);
-      display:flex; align-items:center; justify-content:center;
-      width:100%;
-      pointer-events:none;
-    }
-    .brand h1{
-      margin:0;
-      font-size:36px;
-      font-weight:800;
-      letter-spacing:-.8px;
-      position:relative;
-      color:var(--ink);
-      line-height:1;
-      font-family: var(--font-display);
-    }
+// Эмуляция данных Telegram (если не в приложении)
+const MOCK_TG_USER = {
+  id: 777,
+  first_name: "Jonbella",
+  username: "soul_note",
+  photo_url: null
+};
 
-    /* ✅ МАЗОК КАК НА МАКЕТЕ: ДИАГОНАЛЬНО ПЕРЕЧЁРКИВАЕТ СЛОВО */
-    .brand h1::after{content:none;}
+// --- COMPONENTS ---
 
-    .content{
-      padding:18px 14px 20px;
-      padding-top:calc(18px + 72px + 14px + env(safe-area-inset-top));
-      padding-bottom:calc(20px + 92px + env(safe-area-inset-bottom));
-    }
-    .divider{
-      height:1px;
-      background:rgba(255,255,255,.12);
-      margin:8px 0 6px;
-    }
-
-    /* Chips */
-    .chips{
-      display:flex; gap:10px; overflow:auto;
-      padding:10px 2px 14px;
-      -webkit-overflow-scrolling:touch;
-    }
-    .chip{
-      flex:0 0 auto;
-      padding:10px 16px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.08);
-      font-size:16px; font-weight:450;
-      color:var(--muted);
-      letter-spacing:-.2px;
-      user-select:none; white-space:nowrap;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-    .chip.on{
-      background:rgba(123,108,255,.95);
-      border-color:transparent;
-      color:#fff;
-      font-weight:600;
-    }
-
-    /* Catalog grid */
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0, 1fr));
-      gap:12px;
-      align-items:stretch;
-      margin-top:12px;
-    }
-
-    /* ✅ Обёртка: карточка + переключатель ПОД карточкой */
-    .pWrap{display:flex; flex-direction:column;}
-
-    .card{
-      background:var(--surface);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:28px;
-      overflow:hidden;
-      box-shadow:var(--shadow);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      display:flex;
-      flex-direction:column;
-      height:100%;
-    }
-    .cardMedia{
-      position:relative;
-      aspect-ratio:1/1;
-      overflow:hidden;
-      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.2));
-      flex:0 0 auto;
-    }
-    .cardImage{
-      position:absolute; inset:0;
-      display:flex; align-items:center; justify-content:center;
-      color:rgba(255,255,255,.35);
-      font-size:46px;
-      font-weight:700;
-      letter-spacing:-1px;
-    }
-
-    /* снизу карточки: только название + цена */
-    .cardBody{
-      padding:14px;
-      background:var(--surface-strong);
-      border-top:1px solid rgba(255,255,255,.1);
-      min-height:150px;
-      display:flex;
-      flex-direction:column;
-      flex:1 1 auto;
-    }
-    .priceRow{
-      display:flex;
-      align-items:flex-end;
-      gap:10px;
-      margin-bottom:8px;
-      min-height:26px;
-    }
-    .priceNew{
-      font-size:20px;
-      font-weight:400;
-      color:var(--ink);
-      letter-spacing:-.2px;
-      font-family: var(--font-text);
-    }
-    .pTitle{
-      margin:0 0 8px;
-      font-size:18px;
-      font-weight:400;
-      letter-spacing:-.25px;
-      color:var(--ink);
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-      min-height:44px;
-      font-family: var(--font-text);
-    }
-    .ctaBtn{
-      width:100%;
-      border:0;
-      border-radius:999px;
-      padding:12px 16px;
-      background:linear-gradient(135deg, #6c63ff, #514bff);
-      color:#fff;
-      font-size:16px;
-      font-weight:650;
-      letter-spacing:-.2px;
-      cursor:pointer;
-      margin-top:auto;
-    }
-    .ctaBtn.inCart{
-      background:linear-gradient(135deg, #2d2a4d, #3a375f);
-      color:#ffffff;
-      border:1px solid rgba(255,255,255,.2);
-    }
-
-    /* ✅ Переключатель под карточкой, центр */
-    .qtyUnder{
-      display:flex;
-      justify-content:center;
-      margin-top:10px;
-    }
-    .qtyPill{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:7px 10px;
-      border-radius:999px;
-      background:var(--surface-strong);
-      border:1px solid rgba(47,59,54,.14);
-    }
-    .qbtn{
-      width:34px;height:34px;
-      border-radius:50%;
-      border:1px solid rgba(47,59,54,.12);
-      background:var(--surface);
-      font-size:18px;
-      color:var(--muted);
-      cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .qbtn:disabled{opacity:.35; cursor:default}
-    .qnum{
-      min-width:18px;
-      text-align:center;
-      font-weight:650;
-      color:var(--ink);
-      font-size:18px;
-      letter-spacing:-.2px;
-      line-height:1;
-    }
-
-    /* Bottom nav (3 tabs) */
-    .bottom{
-      position:fixed; left:0; right:0; bottom:0;
-      padding:12px 18px calc(14px + env(safe-area-inset-bottom));
-      background:rgba(14,13,18,.72);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      border-top:1px solid rgba(255,255,255,.08);
-      z-index:60;
-    }
-    .nav{display:flex; justify-content:space-around; align-items:flex-end; gap:10px;}
-    .tab{
-      width:33.333%;
-      text-align:center;
-      text-decoration:none;
-      color:rgba(255,255,255,.55);
-      font-weight:600;
-      font-size:14px;
-      user-select:none;
-      position:relative;
-      padding:6px 0 4px;
-      font-family: var(--font-text);
-    }
-    .tab .ico{display:block; margin:0 auto 6px; width:26px;height:26px; color:rgba(255,255,255,.55);}
-    .tab svg{
-      width:26px;height:26px;
-      stroke:currentColor; fill:none;
-      stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
-    }
-    .tab.active{color:#ffffff}
-    .tab.active .ico{color:#ffffff}
-    .badge{
-      position:absolute;
-      top:0px; left:50%;
-      transform:translate(8px,-6px);
-      min-width:18px; height:18px; padding:0 6px;
-      border-radius:999px;
-      background:#6c63ff; color:#fff;
-      font-weight:700; font-size:12px;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .badge.hidden{display:none}
-
-    /* Cart */
-    .cartWrap{margin-top:6px;}
-    .cartItem{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px;
-      padding:14px;
-      border-radius:22px;
-      background:var(--surface);
-      border:1px solid rgba(47,59,54,.12);
-      box-shadow:var(--shadow);
-      margin-bottom:14px;
-    }
-    .thumb{
-      width:64px;height:64px;
-      border-radius:14px;
-      background:linear-gradient(180deg, rgba(255,255,255,.35), rgba(47,59,54,.06));
-      display:flex; align-items:center; justify-content:center;
-      color:var(--muted);
-      font-weight:700;
-      line-height:1.05;
-      text-align:center;
-    }
-    .thumb b{display:block; font-size:18px}
-    .thumb span{display:block; font-size:22px; margin-top:2px}
-    .ciLeft{display:flex; gap:12px; align-items:center; min-width:0; flex:1;}
-    .ciTxt{min-width:0;}
-    .ciName{
-      font-size:18px; font-weight:500;
-      color:var(--ink);
-      letter-spacing:-.2px;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      max-width:220px;
-    }
-    .ciCat{margin-top:4px; font-size:15px; font-weight:450; color:var(--muted); letter-spacing:-.2px;}
-    .ciPrice{margin-top:10px; font-size:18px; font-weight:450; color:var(--muted); white-space:nowrap;}
-    .totalRow{
-      display:flex; justify-content:space-between; align-items:center;
-      margin:18px 2px 14px;
-      font-size:20px; font-weight:520;
-      color:var(--muted); letter-spacing:-.2px;
-    }
-    .totalRow b{font-size:22px; font-weight:650; color:var(--ink);}
-    .cta{
-      width:100%;
-      border:0; border-radius:999px;
-      padding:16px 18px;
-      background:var(--btn); color:#fff;
-      font-size:18px; font-weight:650;
-      letter-spacing:-.2px;
-      box-shadow:0 12px 26px rgba(0,0,0,.10);
-      cursor:pointer;
-    }
-
-    .emptyBox{
-      margin-top:30px;
-      padding:34px 18px 26px;
-      border-radius:26px;
-      background:var(--surface);
-      border:1px solid rgba(47,59,54,.12);
-      text-align:center;
-      box-shadow:var(--shadow);
-    }
-    .leaf{width:58px;height:58px;margin:0 auto 16px;color:var(--muted);}
-    .emptyTitle{font-size:22px;font-weight:520;color:var(--ink);letter-spacing:-.2px;margin-bottom:10px;}
-    .emptySub{font-size:16px;font-weight:450;color:var(--muted);letter-spacing:-.2px;margin-bottom:18px;}
-    .ghostBtn{
-      border:0; border-radius:999px;
-      padding:14px 18px;
-      background:rgba(47,59,54,.12);
-      color:var(--muted);
-      font-size:16px; font-weight:520;
-      cursor:pointer;
-    }
-
-    /* Profile */
-    .profileTop{margin-top:14px;text-align:center;}
-    .ava{
-      width:110px;height:110px;margin:8px auto 14px;
-      border-radius:999px;
-      background:rgba(255,255,255,.25);
-      border:1px solid rgba(47,59,54,.12);
-      display:flex; align-items:center; justify-content:center;
-      overflow:hidden;
-    }
-    .ava svg{width:66px;height:66px;color:var(--muted)}
-    .pName{font-size:30px;font-weight:520;color:var(--ink);letter-spacing:-.4px;margin:0 0 6px;}
-    .pPhone{font-size:18px;font-weight:450;color:var(--muted);letter-spacing:-.2px;margin:0 0 18px;}
-
-    .panel{
-      background:var(--surface);
-      border:1px solid rgba(47,59,54,.12);
-      border-radius:26px;
-      box-shadow:var(--shadow);
-      padding:18px;
-      margin:14px 0;
-    }
-    .panelTitle{font-size:22px;font-weight:520;color:var(--ink);letter-spacing:-.2px;margin-bottom:12px;text-align:left;}
-    .statusPill{
-      display:inline-flex; align-items:center;
-      padding:10px 16px;
-      border-radius:999px;
-      background:var(--mint-deep);
-      color:#0e1311;
-      font-weight:650;
-      letter-spacing:-.2px;
-      font-size:16px;
-      margin-bottom:12px;
-    }
-    .rowLink{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-      padding:16px 16px;
-      border-radius:18px;
-      background:rgba(47,59,54,.1);
-      color:var(--muted);
-      font-size:18px;
-      font-weight:450;
-      letter-spacing:-.2px;
-      cursor:pointer;
-      user-select:none;
-    }
-    .rowLeft{display:flex; align-items:center; gap:10px; min-width:0;}
-    .rowLeft span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px;}
-    .rowIco{width:22px;height:22px; color:var(--muted);}
-    .chev{width:18px;height:18px; color:var(--muted);}
-    .listBlock{margin-top:12px; display:flex; flex-direction:column; gap:14px;}
-
-    /* Modal (checkout) */
-    .modal{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.28);
-      display:flex;
-      align-items:flex-end;
-      justify-content:center;
-      padding:12px;
-      z-index:200;
-    }
-    .sheet{
-      width:min(560px, 100%);
-      max-height:92vh;
-      background:var(--surface-strong);
-      border-radius:26px;
-      border:1px solid rgba(47,59,54,.12);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-    }
-    .sheetHead{
-      background:var(--mint);
-      padding:14px 16px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      border-bottom:1px solid rgba(47,59,54,.12);
-    }
-    .sheetTitle{font-size:18px;font-weight:650;color:var(--ink);letter-spacing:-.2px;}
-    .xbtn{
-      width:40px;height:40px;
-      border-radius:14px;
-      border:0;
-      background:rgba(255,255,255,.35);
-      color:var(--muted);
-      font-size:20px;
-    }
-    .sheetBody{
-      padding:16px;
-      overflow:auto;
-      -webkit-overflow-scrolling:touch;
-      background:transparent;
-    }
-    label{
-      display:block;
-      font-size:14px;
-      font-weight:520;
-      color:var(--muted);
-      margin:0 0 8px;
-      letter-spacing:-.2px;
-    }
-    input{
-      width:100%;
-      padding:14px 14px;
-      border-radius:18px;
-      border:1px solid rgba(47,59,54,.12);
-      background:rgba(255,255,255,.45);
-      font-size:16px;
-      outline:none;
-      color:var(--ink);
-    }
-    .field{margin-bottom:14px;}
-    .err{
-      margin-top:8px;
-      color:var(--red);
-      font-size:13px;
-      font-weight:520;
-      display:none;
-      letter-spacing:-.1px;
-    }
-    .sheetFoot{
-      padding:12px 16px 16px;
-      border-top:1px solid rgba(47,59,54,.12);
-      background:transparent;
-    }
-    .send{
-      width:100%;
-      border:0;
-      border-radius:999px;
-      padding:16px 18px;
-      background:var(--btn);
-      color:#fff;
-      font-size:18px;
-      font-weight:650;
-      letter-spacing:-.2px;
-      cursor:pointer;
-    }
-
-    .toggleRow{display:flex; gap:10px; margin:4px 0 14px;}
-    .pill{
-      flex:1;
-      border-radius:999px;
-      border:1px solid rgba(47,59,54,.12);
-      background:var(--surface);
-      padding:12px 12px;
-      font-size:16px;
-      font-weight:520;
-      color:var(--muted);
-      text-align:center;
-      cursor:pointer;
-      user-select:none;
-    }
-    .pill.on{
-      background:var(--mint-deep);
-      color:var(--mint-dark);
-      border-color:rgba(0,0,0,.06);
-      font-weight:650;
-    }
-    #okView > div:first-child{color:var(--ink)!important;}
-    #okView > div:nth-child(2){color:var(--muted)!important;}
-
-    @media (max-width:360px){
-      .grid{grid-template-columns:1fr}
-      .brand h1{font-size:34px}
-      .ciName{max-width:160px}
-    }
-  </style>
-</head>
-
-<body>
-  <div class="app">
-    <div class="topbar">
-      <div class="topgrid">
-        <div class="brand">
-          <h1>Ne buket</h1>
-        </div>
-      </div>
-    </div>
-
-    <div class="content">
-      <section id="page-catalog">
-        <div class="divider"></div>
-        <div class="chips" id="chips"></div>
-        <div class="grid" id="grid"></div>
-      </section>
-
-      <section id="page-cart" class="hidden">
-        <div class="cartWrap" id="cartWrap"></div>
-      </section>
-
-      <section id="page-profile" class="hidden">
-        <div class="profileTop">
-          <div class="ava" id="ava">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M20 21a8 8 0 0 0-16 0"/>
-              <path d="M12 12a4 4 0 1 0-0.01 0"/>
-            </svg>
-          </div>
-          <h2 class="pName" id="pName">Пользователь</h2>
-          <p class="pPhone" id="pPhone">—</p>
-        </div>
-
-        <div class="panel" id="activePanel">
-          <div class="panelTitle">Активный заказ</div>
-          <div id="activeInner"></div>
-        </div>
-
-        <div class="listBlock">
-          <div class="rowLink" id="historyBtn">
-            <div class="rowLeft">
-              <svg class="rowIco" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 8v5l3 2"></path>
-                <path d="M3.5 12a8.5 8.5 0 1 0 3-6.5"></path>
-                <path d="M3 4v5h5"></path>
-              </svg>
-              <span>История заказов</span>
-            </div>
-            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 18l6-6-6-6"></path>
-            </svg>
-          </div>
-
-          <div class="rowLink" id="addrBtn">
-            <div class="rowLeft">
-              <svg class="rowIco" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11Z"></path>
-                <path d="M12 10.5a2 2 0 1 0 0.01 0"></path>
-              </svg>
-              <span>Адреса доставки</span>
-            </div>
-            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 18l6-6-6-6"></path>
-            </svg>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="bottom">
-      <div class="nav">
-        <a class="tab active" href="#catalog" id="tab-catalog">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 7h16"></path>
-              <path d="M4 12h16"></path>
-              <path d="M4 17h16"></path>
-            </svg>
-          </span>
-          Меню
-        </a>
-
-        <a class="tab" href="#cart" id="tab-cart">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M6 8h12l-1 11H7L6 8Z"></path>
-              <path d="M9 8a3 3 0 0 1 6 0"></path>
-              <path d="M9 12h6"></path>
-            </svg>
-          </span>
-          Корзина
-          <span class="badge hidden" id="badge">0</span>
-        </a>
-
-        <a class="tab" href="#profile" id="tab-profile">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M20 21a8 8 0 0 0-16 0"></path>
-              <path d="M12 12a4 4 0 1 0-0.01 0"></path>
-            </svg>
-          </span>
-          Профиль
-        </a>
-      </div>
-    </div>
+// 1. Reusable Glass Card
+const GlassCard = ({ children, className = '', onClick }) => (
+  <div 
+    onClick={onClick}
+    className={`bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-xl ${className}`}
+  >
+    {children}
   </div>
+);
 
-  <!-- CHECKOUT MODAL -->
-  <div class="modal hidden" id="checkoutModal">
-    <div class="sheet">
-      <div class="sheetHead">
-        <div class="sheetTitle">Оформление</div>
-        <button class="xbtn" id="xClose">✕</button>
-      </div>
-
-      <div class="sheetBody" id="formView">
-        <div class="toggleRow" id="deliveryToggle">
-          <div class="pill on" data-mode="delivery">Доставка</div>
-          <div class="pill" data-mode="pickup">Самовывоз</div>
-        </div>
-
-        <div class="field">
-          <label for="cName">Имя</label>
-          <input id="cName" placeholder="Алексей" />
-          <div class="err" id="eName"></div>
-        </div>
-
-        <div class="field">
-          <label for="cPhone">Телефон</label>
-          <input id="cPhone" inputmode="numeric" placeholder="+7 (___) ___-__-__" />
-          <div class="err" id="ePhone"></div>
-        </div>
-
-        <div id="addrGroup">
-          <div class="field">
-            <label for="aCity">Город</label>
-            <input id="aCity" placeholder="Москва" />
-            <div class="err" id="eCity"></div>
-          </div>
-
-          <div class="field">
-            <label for="aStreet">Улица</label>
-            <input id="aStreet" placeholder="Цветочная" />
-            <div class="err" id="eStreet"></div>
-          </div>
-
-          <div class="field">
-            <label for="aHouse">Дом</label>
-            <input id="aHouse" placeholder="15" />
-            <div class="err" id="eHouse"></div>
-          </div>
-
-          <div class="field">
-            <label for="aApt">Квартира (необязательно)</label>
-            <input id="aApt" placeholder="77" />
-            <div class="err" id="eApt"></div>
-          </div>
-        </div>
-
-        <div class="sheetFoot">
-          <button class="send" id="sendOrder">Отправить в работу</button>
-        </div>
-      </div>
-
-      <div class="sheetBody hidden" id="okView">
-        <div style="font-size:20px;font-weight:650;color:rgba(0,0,0,.68);letter-spacing:-.2px;margin-bottom:10px;">
-          Ваш заказ уже в работе
-        </div>
-        <div style="font-size:16px;font-weight:450;color:rgba(0,0,0,.45);letter-spacing:-.2px;line-height:1.35;">
-          Мы спешим позвонить Вам для подтверждения и оплаты заказа.
-        </div>
-        <div class="sheetFoot" style="border-top:0;padding-top:18px;">
-          <button class="send" id="okBtn">Ок</button>
-        </div>
-      </div>
-    </div>
+// 2. Input Field Component
+const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
+  <div className="flex flex-col space-y-2">
+    <label className="text-gray-400 text-xs ml-2 uppercase tracking-wider font-semibold">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-400/50 transition-colors"
+    />
   </div>
+);
 
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) { tg.ready(); tg.expand(); }
+export default function App() {
+  // --- STATE ---
+  const [activeTab, setActiveTab] = useState('catalog');
+  const [cart, setCart] = useState({}); // { [id]: quantity }
+  const [orders, setOrders] = useState([]);
+  const [userData, setUserData] = useState({
+    name: '',
+    phone: '',
+    city: '',
+    street: '',
+    house: '',
+    apt: ''
+  });
+  
+  // Checkout Specific State
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState('delivery'); // 'delivery' | 'pickup'
+  const [packaging, setPackaging] = useState('transport');
+  const [recipient, setRecipient] = useState('me'); // 'me' | 'other'
+  const [recipientInfo, setRecipientInfo] = useState({ name: '', phone: '', comment: '' });
 
-    const CATEGORIES = ["Все","Цветы","Зелень","Ветки"];
-    const PRODUCTS = [
-      { id:"p1", title:"Еще один букет", price:2000, cat:"Ветки" },
-      { id:"p2", title:"Красивый букет", price:1000, cat:"Цветы" },
-      { id:"p3", title:"Сет роз", price:1800, cat:"Цветы" },
-      { id:"p4", title:"Зелень микс", price:900, cat:"Зелень" },
-      { id:"p5", title:"Луговой букет", price:2200, cat:"Цветы" },
-      { id:"p6", title:"Ветки декоративные", price:1400, cat:"Ветки" }
-    ];
+  const tgRef = useRef(null);
 
-    const CART_KEY = "nebuket_cart_v4";
-    const ORDERS_KEY = "nebuket_orders_v4";
-    const ACTIVE_KEY = "nebuket_active_v4";
-    const LAST_PHONE_KEY = "nebuket_last_phone_v4";
-    const LAST_ADDR_KEY = "nebuket_last_addr_v4";
+  // --- EFFECTS ---
 
-    const cart = JSON.parse(localStorage.getItem(CART_KEY) || "{}");
-    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-    let activeId = localStorage.getItem(ACTIVE_KEY) || "";
+  // Инициализация Telegram и загрузка данных
+  useEffect(() => {
+    if (window.Telegram && window.Telegram.WebApp) {
+      tgRef.current = window.Telegram.WebApp;
+      tgRef.current.ready();
+      tgRef.current.expand();
+      tgRef.current.setHeaderColor('#000000');
+      tgRef.current.setBackgroundColor('#000000');
+    }
 
-    const saveCart = () => localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    const saveOrders = () => localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-    const saveActive = () => localStorage.setItem(ACTIVE_KEY, activeId);
+    // Загрузка сохраненных данных
+    const savedData = localStorage.getItem('nebuket_user_data');
+    if (savedData) {
+      setUserData(JSON.parse(savedData));
+    } else {
+      // Предзаполнение из ТГ, если нет сохраненных
+      const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
+      setUserData(prev => ({ ...prev, name: user.first_name || '' }));
+    }
 
-    const $ = (id) => document.getElementById(id);
+    const savedOrders = localStorage.getItem('nebuket_orders');
+    if (savedOrders) setOrders(JSON.parse(savedOrders));
+  }, []);
 
-    const qtyOf = (id) => cart[id] || 0;
-    const cartCount = () => Object.values(cart).reduce((a,b)=>a+b,0);
-    const cartTotal = () => {
-      let sum = 0;
-      for (const [id, q] of Object.entries(cart)){
-        const p = PRODUCTS.find(x=>x.id===id);
-        if (p) sum += p.price * q;
+  // Сохранение данных пользователя при изменении
+  useEffect(() => {
+    localStorage.setItem('nebuket_user_data', JSON.stringify(userData));
+  }, [userData]);
+
+  // --- LOGIC ---
+
+  const addToCart = (id) => {
+    setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    haptic('light');
+  };
+
+  const removeFromCart = (id) => {
+    setCart(prev => {
+      const newCart = { ...prev };
+      if (newCart[id] > 1) {
+        newCart[id]--;
+      } else {
+        delete newCart[id];
       }
-      return sum;
+      return newCart;
+    });
+    haptic('light');
+  };
+
+  const haptic = (style) => {
+    if (tgRef.current?.HapticFeedback) {
+      tgRef.current.HapticFeedback.impactOccurred(style);
+    }
+  };
+
+  const getCartTotal = () => {
+    let total = 0;
+    Object.entries(cart).forEach(([id, qty]) => {
+      const product = PRODUCTS.find(p => p.id === parseInt(id));
+      if (product) total += product.price * qty;
+    });
+    return total;
+  };
+
+  const getFinalTotal = () => {
+    const cartTotal = getCartTotal();
+    const packPrice = PACKAGING_OPTIONS.find(p => p.id === packaging)?.price || 0;
+    return cartTotal + packPrice;
+  };
+
+  const handlePhoneChange = (e, setter) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 0 && val[0] !== '7') val = '7' + val;
+    val = val.substring(0, 11);
+    
+    let formatted = '';
+    if (val.length > 0) formatted += '+7';
+    if (val.length > 1) formatted += ' (' + val.substring(1, 4);
+    if (val.length > 4) formatted += ') ' + val.substring(4, 7);
+    if (val.length > 7) formatted += '-' + val.substring(7, 9);
+    if (val.length > 9) formatted += '-' + val.substring(9, 11);
+
+    setter(prev => ({ ...prev, phone: formatted }));
+  };
+
+  const submitOrder = () => {
+    const newOrder = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      items: cart,
+      total: getFinalTotal(),
+      status: 'В обработке',
+      packaging: PACKAGING_OPTIONS.find(p => p.id === packaging).name,
+      delivery: deliveryMethod
     };
-    function formatMoney(n){ return n.toLocaleString("ru-RU") + " ₽"; }
 
-    function formatAddress(addr){
-      if (!addr) return "";
-      if (addr.mode === "pickup") return "Самовывоз";
-      const parts = [];
-      if (addr.city) parts.push("г. " + addr.city);
-      if (addr.street) parts.push("ул. " + addr.street);
-      if (addr.house) parts.push("д. " + addr.house);
-      if (addr.apt) parts.push("кв. " + addr.apt);
-      return parts.join(", ");
-    }
+    const updatedOrders = [newOrder, ...orders];
+    setOrders(updatedOrders);
+    localStorage.setItem('nebuket_orders', JSON.stringify(updatedOrders));
+    
+    setCart({});
+    setIsCheckoutOpen(false);
+    setActiveTab('profile');
+    haptic('success');
+    
+    // В реальном приложении здесь отправка данных боту через tgRef.current.sendData()
+  };
 
-    /* Navigation */
-    const pages = { catalog: $("page-catalog"), cart: $("page-cart"), profile: $("page-profile") };
-    const tabs = { catalog: $("tab-catalog"), cart: $("tab-cart"), profile: $("tab-profile") };
+  // --- RENDER SCREENS ---
 
-    function showPage(name){
-      Object.keys(pages).forEach(k => pages[k].classList.toggle("hidden", k !== name));
-      Object.keys(tabs).forEach(k => tabs[k].classList.toggle("active", k === name));
-      location.hash = name;
-      renderBadge();
-      if (name === "cart") renderCart();
-      if (name === "profile") renderProfile();
-    }
-    Object.keys(tabs).forEach(k => tabs[k].addEventListener("click", (e) => { e.preventDefault(); showPage(k); }));
+  const renderCatalog = () => (
+    <div className="pb-24 px-4 pt-6 space-y-6">
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Ne buket</h1>
+          <p className="text-white/60 text-sm mt-1">Искусство дарить эмоции</p>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-500 to-orange-500 blur-lg opacity-50 absolute right-4 top-8"></div>
+      </div>
 
-    /* Chips */
-    const state = { cat: "Все" };
-    function renderChips(){
-      $("chips").innerHTML = CATEGORIES.map(c => `
-        <button class="chip ${state.cat===c ? "on":""}" data-cat="${c}">${c}</button>
-      `).join("");
-      $("chips").onclick = (e) => {
-        const b = e.target.closest("button"); if(!b) return;
-        state.cat = b.dataset.cat;
-        renderCatalog();
-      };
-    }
-
-    /* ✅ Catalog with qty under card */
-    function renderCatalog(){
-      const list = PRODUCTS.filter(p => state.cat === "Все" || p.cat === state.cat);
-
-      $("grid").innerHTML = list.map(p => {
-        const inCart = qtyOf(p.id) > 0;
-        return `
-          <div class="pWrap">
-            <div class="card">
-              <div class="cardMedia">
-                <div class="cardImage">${String(p.title).slice(0,2).toUpperCase()}</div>
-              </div>
-              <div class="cardBody">
-                <div class="priceRow">
-                  <div class="priceNew">${formatMoney(p.price)}</div>
+      <div className="grid grid-cols-2 gap-4">
+        {PRODUCTS.map(product => (
+          <GlassCard key={product.id} className="p-0 overflow-hidden group active:scale-95 transition-transform duration-200">
+            <div className="relative aspect-[3/4]">
+              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
+              
+              <div className="absolute bottom-0 left-0 w-full p-3">
+                <h3 className="font-medium text-white text-sm truncate">{product.name}</h3>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="font-bold text-white">{product.price.toLocaleString()} ₽</span>
+                  
+                  {cart[product.id] ? (
+                    <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
+                      <button onClick={(e) => {e.stopPropagation(); removeFromCart(product.id)}} className="text-white"><Minus size={14}/></button>
+                      <span className="text-xs font-bold">{cart[product.id]}</span>
+                      <button onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} className="text-white"><Plus size={14}/></button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={(e) => {e.stopPropagation(); addToCart(product.id)}}
+                      className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full backdrop-blur-md transition-colors"
+                    >
+                      <Plus size={18} className="text-white" />
+                    </button>
+                  )}
                 </div>
-                <p class="pTitle" title="${p.title}">${p.title}</p>
-                <button class="ctaBtn ${inCart ? "inCart" : ""}" data-add="${p.id}">
-                  ${inCart ? "В корзине" : "В корзину"}
+              </div>
+            </div>
+          </GlassCard>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderCart = () => {
+    const hasItems = Object.keys(cart).length > 0;
+
+    if (isCheckoutOpen) return renderCheckout();
+
+    return (
+      <div className="pb-24 px-4 pt-6 h-full flex flex-col">
+        <h1 className="text-3xl font-bold text-white mb-6">Корзина</h1>
+        
+        {!hasItems ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-white/40 space-y-4">
+            <ShoppingBag size={64} strokeWidth={1} />
+            <p>Ваша корзина пуста</p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto space-y-3">
+            {Object.entries(cart).map(([id, qty]) => {
+              const product = PRODUCTS.find(p => p.id === parseInt(id));
+              return (
+                <GlassCard key={id} className="flex items-center space-x-4 p-3">
+                  <img src={product.image} className="w-16 h-16 rounded-xl object-cover" alt="" />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-white">{product.name}</h3>
+                    <p className="text-white/50 text-sm">{product.price.toLocaleString()} ₽</p>
+                  </div>
+                  <div className="flex flex-col items-center space-y-1">
+                    <button onClick={() => addToCart(product.id)} className="bg-white/10 p-1 rounded-full"><Plus size={14} /></button>
+                    <span className="text-sm font-bold">{qty}</span>
+                    <button onClick={() => removeFromCart(product.id)} className="bg-white/10 p-1 rounded-full"><Minus size={14} /></button>
+                  </div>
+                </GlassCard>
+              );
+            })}
+          </div>
+        )}
+
+        {hasItems && (
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <div className="flex justify-between text-white mb-4 px-2">
+              <span className="text-white/60">Итого:</span>
+              <span className="font-bold text-xl">{getCartTotal().toLocaleString()} ₽</span>
+            </div>
+            <button 
+              onClick={() => setIsCheckoutOpen(true)}
+              className="w-full bg-gradient-to-r from-red-500 to-orange-600 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-transform"
+            >
+              Оформить заказ
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCheckout = () => {
+    const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
+
+    return (
+      <div className="pb-24 px-4 pt-4">
+        <div className="flex items-center space-x-3 mb-6">
+          <button onClick={() => setIsCheckoutOpen(false)} className="p-2 bg-white/5 rounded-full"><ArrowLeft size={20} /></button>
+          <h2 className="text-xl font-bold">Оформление</h2>
+        </div>
+
+        <div className="space-y-6 overflow-y-auto pb-8">
+          {/* Greeting */}
+          <div className="flex items-center space-x-3 bg-gradient-to-r from-red-500/20 to-transparent p-4 rounded-2xl border border-red-500/20">
+            <User className="text-red-400" />
+            <div>
+              <p className="text-xs text-red-300">Оформляем для</p>
+              <p className="font-bold">{user.first_name} {user.last_name}</p>
+            </div>
+          </div>
+
+          {/* Delivery Method */}
+          <div className="space-y-3">
+            <label className="text-sm text-gray-400 uppercase font-bold ml-1">Способ получения</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => setDeliveryMethod('delivery')}
+                className={`p-4 rounded-2xl border transition-all ${deliveryMethod === 'delivery' ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10'}`}
+              >
+                <Truck className="mb-2" />
+                <div className="font-bold text-sm">Доставка</div>
+              </button>
+              <button 
+                onClick={() => setDeliveryMethod('pickup')}
+                className={`p-4 rounded-2xl border transition-all ${deliveryMethod === 'pickup' ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10'}`}
+              >
+                <Package className="mb-2" />
+                <div className="font-bold text-sm">Самовывоз</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Packaging */}
+          <div className="space-y-3">
+            <label className="text-sm text-gray-400 uppercase font-bold ml-1">Упаковка</label>
+            <div className="space-y-2">
+              {PACKAGING_OPTIONS.map(opt => (
+                <div 
+                  key={opt.id}
+                  onClick={() => setPackaging(opt.id)}
+                  className={`flex justify-between items-center p-4 rounded-2xl border transition-all cursor-pointer ${packaging === opt.id ? 'bg-white/10 border-red-500/50' : 'bg-white/5 border-white/5'}`}
+                >
+                  <div>
+                    <div className="font-bold text-sm">{opt.name}</div>
+                    <div className="text-xs text-gray-400">{opt.desc}</div>
+                  </div>
+                  <div className="font-bold text-red-400">{opt.price === 0 ? 'Бесплатно' : `${opt.price} ₽`}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact Info */}
+          <GlassCard className="space-y-4">
+            <h3 className="font-bold text-lg mb-2">Ваши данные</h3>
+            <InputField 
+              label="Имя" 
+              value={userData.name} 
+              onChange={(e) => setUserData({...userData, name: e.target.value})} 
+            />
+            <div className="flex flex-col space-y-2">
+               <label className="text-gray-400 text-xs ml-2 uppercase tracking-wider font-semibold">Телефон</label>
+               <input
+                type="tel"
+                value={userData.phone}
+                onChange={(e) => handlePhoneChange(e, setUserData)}
+                placeholder="+7 (999) 000-00-00"
+                className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-400/50 transition-colors"
+              />
+            </div>
+            
+            {deliveryMethod === 'delivery' && (
+              <>
+                <div className="border-t border-white/10 my-4"></div>
+                <h3 className="font-bold text-lg mb-2">Адрес доставки</h3>
+                <InputField label="Город" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} />
+                <InputField label="Улица" value={userData.street} onChange={(e) => setUserData({...userData, street: e.target.value})} />
+                <div className="flex space-x-3">
+                  <InputField label="Дом" value={userData.house} onChange={(e) => setUserData({...userData, house: e.target.value})} />
+                  <InputField label="Кв/Офис" value={userData.apt} onChange={(e) => setUserData({...userData, apt: e.target.value})} />
+                </div>
+              </>
+            )}
+          </GlassCard>
+
+          {/* Recipient Logic */}
+          {deliveryMethod === 'delivery' && (
+            <GlassCard className="space-y-4">
+              <h3 className="font-bold text-lg mb-2">Кому звонить?</h3>
+              <div className="flex bg-black/40 p-1 rounded-xl">
+                <button 
+                  onClick={() => setRecipient('me')} 
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${recipient === 'me' ? 'bg-white/20 text-white shadow-lg' : 'text-gray-400'}`}
+                >
+                  Мне
+                </button>
+                <button 
+                  onClick={() => setRecipient('other')} 
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${recipient === 'other' ? 'bg-white/20 text-white shadow-lg' : 'text-gray-400'}`}
+                >
+                  Получателю
                 </button>
               </div>
-            </div>
-          </div>
-        `;
-      }).join("");
 
-      $("grid").onclick = (e) => {
-        const btn = e.target.closest("button"); if(!btn) return;
-        const add = btn.dataset.add;
+              {recipient === 'other' && (
+                <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
+                  <InputField 
+                    label="Имя получателя" 
+                    value={recipientInfo.name} 
+                    onChange={(e) => setRecipientInfo({...recipientInfo, name: e.target.value})} 
+                  />
+                  <div className="flex flex-col space-y-2">
+                    <label className="text-gray-400 text-xs ml-2 uppercase tracking-wider font-semibold">Телефон получателя</label>
+                    <input
+                      type="tel"
+                      value={recipientInfo.phone}
+                      onChange={(e) => handlePhoneChange(e, setRecipientInfo)}
+                      placeholder="+7 (999) 000-00-00"
+                      className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-400/50 transition-colors"
+                    />
+                  </div>
+                  <InputField 
+                    label="Комментарий (опц.)" 
+                    value={recipientInfo.comment} 
+                    onChange={(e) => setRecipientInfo({...recipientInfo, comment: e.target.value})} 
+                  />
+                </div>
+              )}
+            </GlassCard>
+          )}
 
-        if (add){
-          if (qtyOf(add) > 0){
-            showPage("cart");
-            return;
-          }
-          cart[add] = (cart[add] || 0) + 1;
-          saveCart();
-          renderCatalog();
-          renderBadge();
-        }
-      };
-    }
-
-    function renderBadge(){
-      const n = cartCount();
-      $("badge").textContent = String(n);
-      $("badge").classList.toggle("hidden", n === 0);
-    }
-
-    /* Cart */
-    function renderCart(){
-      const wrap = $("cartWrap");
-      const empty = Object.keys(cart).length === 0;
-
-      if (empty){
-        wrap.innerHTML = `
-          <div class="emptyBox">
-            <svg class="leaf" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 21c4-3 6-6 6-10-3 0-6 2-8 5-1-3-4-5-8-5 0 4 2 7 6 10"
-                fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <div class="emptyTitle">Корзина пустая</div>
-            <div class="emptySub">Нажми “+” у товара. Он появится здесь.</div>
-            <button class="ghostBtn" id="toCatalog">В каталог</button>
-          </div>
-        `;
-        $("toCatalog").onclick = () => showPage("catalog");
-        return;
-      }
-
-      const itemsHtml = Object.entries(cart).map(([id, qty]) => {
-        const p = PRODUCTS.find(x=>x.id===id);
-        if (!p) return "";
-        const nn = String(p.ph).padStart(2,"0");
-        return `
-          <div class="cartItem">
-            <div class="ciLeft">
-              <div class="thumb"><b>NE</b><span>${nn}</span></div>
-              <div class="ciTxt">
-                <div class="ciName">${p.title}</div>
-                <div class="ciCat">${p.cat}</div>
-                <div class="ciPrice">${formatMoney(p.price)}</div>
-              </div>
+          {/* Total & Actions */}
+          <div className="pt-4">
+            <div className="flex justify-between items-center mb-6 px-2">
+              <span className="text-gray-400">К оплате:</span>
+              <span className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                {getFinalTotal().toLocaleString()} ₽
+              </span>
             </div>
 
-            <div class="qtyPill" style="background:rgba(255,255,255,.55);">
-              <button class="qbtn" data-dec="${p.id}">–</button>
-              <div class="qnum">${qty}</div>
-              <button class="qbtn" data-inc="${p.id}">+</button>
-            </div>
+            <button 
+              onClick={submitOrder}
+              className="w-full bg-white text-black font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform mb-3"
+            >
+              Передать на сборку
+            </button>
+            <button 
+              onClick={() => setIsCheckoutOpen(false)}
+              className="w-full text-red-400 py-3 font-medium active:opacity-70"
+            >
+              Отменить
+            </button>
           </div>
-        `;
-      }).join("");
-
-      wrap.innerHTML = `
-        ${itemsHtml}
-        <div class="totalRow">
-          <span>Итого:</span>
-          <b>${formatMoney(cartTotal())}</b>
         </div>
-        <button class="cta" id="checkoutBtn">Оформить</button>
-      `;
+      </div>
+    );
+  };
 
-      wrap.onclick = (e) => {
-        const btn = e.target.closest("button"); if(!btn) return;
-        const inc = btn.dataset.inc;
-        const dec = btn.dataset.dec;
+  const renderProfile = () => {
+    const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
 
-        if (inc){
-          cart[inc] = (cart[inc] || 0) + 1;
-          saveCart();
-          renderCart();
-          renderCatalog();
-          renderBadge();
-        }
-        if (dec){
-          cart[dec] = (cart[dec] || 0) - 1;
-          if (cart[dec] <= 0) delete cart[dec];
-          saveCart();
-          renderCart();
-          renderCatalog();
-          renderBadge();
-        }
-      };
+    return (
+      <div className="pb-24 px-4 pt-10 space-y-6">
+         {/* Header */}
+         <div className="flex items-center space-x-4">
+           <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center border-4 border-white/5 shadow-2xl">
+              {user.photo_url ? (
+                <img src={user.photo_url} className="w-full h-full rounded-full" alt="avatar" />
+              ) : (
+                <span className="text-3xl font-bold text-white">{user.first_name[0]}</span>
+              )}
+           </div>
+           <div>
+             <h2 className="text-2xl font-bold">{user.first_name} {user.last_name}</h2>
+             <p className="text-red-400">@{user.username || 'username'}</p>
+           </div>
+         </div>
 
-      $("checkoutBtn").onclick = () => openCheckout();
-    }
-
-    /* Profile */
-    function renderProfile(){
-      const user = tg?.initDataUnsafe?.user;
-      const name = user ? [user.first_name, user.last_name].filter(Boolean).join(" ").trim() : "Пользователь";
-      $("pName").textContent = name || "Пользователь";
-
-      const lastPhone = localStorage.getItem(LAST_PHONE_KEY) || "";
-      $("pPhone").textContent = lastPhone || "—";
-
-      const active = orders.find(o => o.id === activeId && o.status === "in_work");
-
-      if (!active){
-        $("activeInner").innerHTML = `
-          <div style="color:rgba(0,0,0,.40);font-weight:450;letter-spacing:-.2px;">
-            У вас нет активных заказов
-          </div>
-        `;
-      } else {
-        $("activeInner").innerHTML = `
-          <div class="statusPill">Оформление</div>
-          <div class="rowLink" id="openActive">
-            <div class="rowLeft">
-              <svg class="rowIco" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11Z"></path>
-                <path d="M12 10.5a2 2 0 1 0 0.01 0"></path>
-              </svg>
-              <span>${active.addressText}</span>
+         {/* Saved Delivery Data */}
+         <GlassCard>
+           <div className="flex justify-between items-center mb-4">
+             <h3 className="font-bold text-lg">Данные доставки</h3>
+             <MapPin size={18} className="text-gray-500"/>
+           </div>
+           <div className="space-y-3">
+             <InputField label="Город" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} />
+             <InputField label="Улица" value={userData.street} onChange={(e) => setUserData({...userData, street: e.target.value})} />
+             <div className="flex space-x-3">
+                  <InputField label="Дом" value={userData.house} onChange={(e) => setUserData({...userData, house: e.target.value})} />
+                  <InputField label="Кв" value={userData.apt} onChange={(e) => setUserData({...userData, apt: e.target.value})} />
             </div>
-            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 18l6-6-6-6"></path>
-            </svg>
+           </div>
+         </GlassCard>
+
+         {/* Order History */}
+         <div>
+           <h3 className="font-bold text-xl mb-4 pl-2">Мои заказы</h3>
+           <div className="space-y-3">
+             {orders.length === 0 ? (
+               <p className="text-gray-500 text-center py-8">История заказов пуста</p>
+             ) : (
+               orders.map(order => (
+                 <GlassCard key={order.id} className="flex justify-between items-center">
+                   <div>
+                     <div className="font-bold text-white">Заказ #{order.id.toString().slice(-4)}</div>
+                     <div className="text-xs text-gray-400">{order.date} • {Object.values(order.items).reduce((a,b)=>a+b,0)} тв.</div>
+                     <div className="text-xs text-gray-500 mt-1">{order.packaging}</div>
+                   </div>
+                   <div className="text-right">
+                     <div className="font-bold text-red-400">{order.total.toLocaleString()} ₽</div>
+                     <div className="text-[10px] bg-white/10 px-2 py-1 rounded-full mt-1 inline-block">{order.status}</div>
+                   </div>
+                 </GlassCard>
+               ))
+             )}
+           </div>
+         </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-black min-h-screen text-white font-sans selection:bg-red-500/30">
+      {/* Background Ambience */}
+      <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-red-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+      {/* Main Content Area */}
+      <div className="relative z-10 max-w-md mx-auto h-screen flex flex-col">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          {activeTab === 'catalog' && renderCatalog()}
+          {activeTab === 'cart' && renderCart()}
+          {activeTab === 'profile' && renderProfile()}
+        </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      {!isCheckoutOpen && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[360px] z-50">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-2 flex justify-between items-center shadow-2xl">
+            <button 
+              onClick={() => setActiveTab('catalog')}
+              className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all duration-300 ${activeTab === 'catalog' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'}`}
+            >
+              <Home size={24} strokeWidth={activeTab === 'catalog' ? 2.5 : 2} />
+            </button>
+            <button 
+              onClick={() => setActiveTab('cart')}
+              className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all duration-300 relative ${activeTab === 'cart' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'}`}
+            >
+              <ShoppingBag size={24} strokeWidth={activeTab === 'cart' ? 2.5 : 2} />
+              {Object.keys(cart).length > 0 && activeTab !== 'cart' && (
+                <div className="absolute top-2 right-8 w-2 h-2 bg-red-500 rounded-full"></div>
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all duration-300 ${activeTab === 'profile' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'}`}
+            >
+              <User size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
+            </button>
           </div>
-        `;
-        $("openActive").onclick = () => {
-          alert(`Заказ №${active.id}\nСумма: ${formatMoney(active.total)}\n${active.addressText}`);
-        };
-      }
+        </div>
+      )}
 
-      $("historyBtn").onclick = () => {
-        if (!orders.length) { alert("История заказов пока пустая."); return; }
-        const o = orders[0];
-        alert(`Последний заказ №${o.id}\nСумма: ${formatMoney(o.total)}\n${o.addressText}`);
-      };
-      $("addrBtn").onclick = () => {
-        const lastAddr = JSON.parse(localStorage.getItem(LAST_ADDR_KEY) || "null");
-        alert(lastAddr ? `Последний адрес:\n${formatAddress(lastAddr)}` : "Пока нет сохранённых адресов.");
-      };
-    }
-
-
-    /* Checkout modal */
-    const checkoutModal = $("checkoutModal");
-    const formView = $("formView");
-    const okView = $("okView");
-
-    let lockDepth = 0;
-    let scrollTop = 0;
-
-    function lockScroll(){
-      lockDepth++;
-      if (lockDepth > 1) return;
-      scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollTop}px`;
-      document.body.style.left = "0";
-      document.body.style.right = "0";
-      document.body.style.width = "100%";
-    }
-    function unlockScroll(){
-      lockDepth = Math.max(0, lockDepth - 1);
-      if (lockDepth !== 0) return;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.width = "";
-      window.scrollTo(0, scrollTop);
-    }
-
-    const checkoutState = { mode: "delivery" };
-    function setMode(mode){
-      checkoutState.mode = mode;
-      const pills = $("deliveryToggle").querySelectorAll(".pill");
-      pills.forEach(p => p.classList.toggle("on", p.dataset.mode === mode));
-      $("addrGroup").classList.toggle("hidden", mode === "pickup");
-      if (mode === "pickup") {
-        ["eCity","eStreet","eHouse","eApt"].forEach(id => { $(id).style.display="none"; $(id).textContent=""; });
-      }
-    }
-    $("deliveryToggle").addEventListener("click", (e) => {
-      const pill = e.target.closest(".pill");
-      if (!pill) return;
-      setMode(pill.dataset.mode);
-    });
-
-    function openCheckout(){
-      formView.classList.remove("hidden");
-      okView.classList.add("hidden");
-      clearErrors();
-
-      $("cName").value = tg?.initDataUnsafe?.user?.first_name || "";
-      $("cPhone").value = localStorage.getItem(LAST_PHONE_KEY) || "";
-
-      const lastAddr = JSON.parse(localStorage.getItem(LAST_ADDR_KEY) || "null");
-      if (lastAddr && lastAddr.mode === "delivery"){
-        $("aCity").value = lastAddr.city || "";
-        $("aStreet").value = lastAddr.street || "";
-        $("aHouse").value = lastAddr.house || "";
-        $("aApt").value = lastAddr.apt || "";
-      } else {
-        $("aCity").value = "";
-        $("aStreet").value = "";
-        $("aHouse").value = "";
-        $("aApt").value = "";
-      }
-
-      setMode("delivery");
-
-      checkoutModal.classList.remove("hidden");
-      lockScroll();
-    }
-    function closeCheckout(){
-      checkoutModal.classList.add("hidden");
-      unlockScroll();
-    }
-    $("xClose").onclick = closeCheckout;
-
-    function formatPhone(raw){
-      let d = (raw || "").replace(/\D/g, "");
-      if (d.startsWith("8")) d = "7" + d.slice(1);
-      if (d.startsWith("9")) d = "7" + d;
-      if (!d.startsWith("7")) d = "7" + d;
-      d = d.slice(0, 11);
-
-      const a = d.slice(1, 4);
-      const b = d.slice(4, 7);
-      const c = d.slice(7, 9);
-      const e = d.slice(9, 11);
-
-      let out = "+7";
-      if (a.length) out += " (" + a;
-      if (a.length === 3) out += ")";
-      if (b.length) out += " " + b;
-      if (c.length) out += "-" + c;
-      if (e.length) out += "-" + e;
-
-      return { formatted: out, digits: d };
-    }
-    $("cPhone").addEventListener("input", () => {
-      const f = formatPhone($("cPhone").value);
-      $("cPhone").value = f.formatted;
-    });
-
-    function clearErrors(){
-      ["eName","ePhone","eCity","eStreet","eHouse","eApt"].forEach(id => {
-        $(id).style.display = "none";
-        $(id).textContent = "";
-      });
-    }
-    function setErr(id, msg){
-      $(id).textContent = msg;
-      $(id).style.display = "block";
-    }
-    function genId(){ return String(Date.now()).slice(-6); }
-
-    $("sendOrder").onclick = () => {
-      clearErrors();
-
-      const name = ($("cName").value || "").trim();
-      const phoneInfo = formatPhone($("cPhone").value);
-
-      if (!name) setErr("eName", "Укажите имя");
-      if (phoneInfo.digits.length !== 11) setErr("ePhone", "Укажите телефон полностью");
-
-      let addr = { mode: checkoutState.mode };
-
-      if (checkoutState.mode === "delivery"){
-        const city = ($("aCity").value || "").trim();
-        const street = ($("aStreet").value || "").trim();
-        const house = ($("aHouse").value || "").trim();
-        const apt = ($("aApt").value || "").trim(); // ✅ необязательно
-
-        if (!city) setErr("eCity", "Укажите город");
-        if (!street) setErr("eStreet", "Укажите улицу");
-        if (!house) setErr("eHouse", "Укажите дом");
-
-        addr = { mode:"delivery", city, street, house, apt };
-      } else {
-        addr = { mode:"pickup" };
-      }
-
-      const any = ["eName","ePhone","eCity","eStreet","eHouse","eApt"].some(id => $(id).style.display === "block");
-      if (any) return;
-
-      const items = Object.entries(cart).map(([id, qty]) => {
-        const p = PRODUCTS.find(x=>x.id===id);
-        return { id, title: p?.title || id, price: p?.price || 0, qty };
-      });
-
-      const order = {
-        id: genId(),
-        status: "in_work",
-        created_at: new Date().toISOString(),
-        name,
-        phone: phoneInfo.formatted,
-        deliveryMode: addr.mode,
-        address: addr,
-        addressText: formatAddress(addr),
-        items,
-        total: cartTotal()
-      };
-
-      orders.unshift(order);
-      saveOrders();
-
-      activeId = order.id;
-      saveActive();
-
-      localStorage.setItem(LAST_PHONE_KEY, order.phone);
-      localStorage.setItem(LAST_ADDR_KEY, JSON.stringify(addr));
-
-      Object.keys(cart).forEach(k => delete cart[k]);
-      saveCart();
-      renderBadge();
-
-      tg?.sendData(JSON.stringify({ action:"order_in_work", order }));
-
-      formView.classList.add("hidden");
-      okView.classList.remove("hidden");
-    };
-
-    $("okBtn").onclick = () => {
-      closeCheckout();
-      showPage("profile");
-    };
-
-    function init(){
-      renderChips();
-      renderCatalog();
-      renderBadge();
-
-      const start = (location.hash || "#catalog").replace("#","");
-      showPage(["catalog","cart","profile"].includes(start) ? start : "catalog");
-    }
-
-    init();
-  </script>
-</body>
-</html>
+      {/* Telegram Script */}
+      <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    </div>
+  );
+}
