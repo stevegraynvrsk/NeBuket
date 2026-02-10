@@ -1,566 +1,582 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingBag, User, Home, Plus, Minus, X, ArrowLeft, MapPin, Phone, CreditCard, Package, Truck, Check } from 'lucide-react';
-
-// --- MOCK DATA & CONSTANTS ---
-
-const PRODUCTS = [
-  { id: 1, name: 'Пионовый Закат', price: 4500, image: 'https://images.unsplash.com/photo-1563241527-3004b7be025b?auto=format&fit=crop&q=80&w=800' },
-  { id: 2, name: 'Нежная Роза', price: 3200, image: 'https://images.unsplash.com/photo-1582794543139-8ac5ea5a01f6?auto=format&fit=crop&q=80&w=800' },
-  { id: 3, name: 'Дикий Луг', price: 2800, image: 'https://images.unsplash.com/photo-1494336934272-f0efcedfc8d7?auto=format&fit=crop&q=80&w=800' },
-  { id: 4, name: 'Королевский Синий', price: 5600, image: 'https://images.unsplash.com/photo-1562690868-60bbe7621e6c?auto=format&fit=crop&q=80&w=800' },
-  { id: 5, name: 'Белое Облако', price: 4100, image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&q=80&w=800' },
-];
-
-const PACKAGING_OPTIONS = [
-  { id: 'transport', name: 'Транспортировочная', price: 0, desc: 'Для доставки' },
-  { id: 'craft', name: 'Крафт-бумага', price: 0, desc: 'Эко-минимализм' },
-  { id: 'box', name: 'Коробка-чемодан', price: 400, desc: 'С ручкой + уход' },
-];
-
-// Эмуляция данных Telegram (если не в приложении)
-const MOCK_TG_USER = {
-  id: 777,
-  first_name: "Jonbella",
-  username: "soul_note",
-  photo_url: null
-};
-
-// --- COMPONENTS ---
-
-// 1. Reusable Glass Card
-const GlassCard = ({ children, className = '', onClick }) => (
-  <div 
-    onClick={onClick}
-    className={`bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-5 shadow-xl ${className}`}
-  >
-    {children}
-  </div>
-);
-
-// 2. Input Field Component
-const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
-  <div className="flex flex-col space-y-2">
-    <label className="text-gray-400 text-xs ml-2 uppercase tracking-wider font-semibold">{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-400/50 transition-colors"
-    />
-  </div>
-);
-
-export default function App() {
-  // --- STATE ---
-  const [activeTab, setActiveTab] = useState('catalog');
-  const [cart, setCart] = useState({}); // { [id]: quantity }
-  const [orders, setOrders] = useState([]);
-  const [userData, setUserData] = useState({
-    name: '',
-    phone: '',
-    city: '',
-    street: '',
-    house: '',
-    apt: ''
-  });
-  
-  // Checkout Specific State
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [deliveryMethod, setDeliveryMethod] = useState('delivery'); // 'delivery' | 'pickup'
-  const [packaging, setPackaging] = useState('transport');
-  const [recipient, setRecipient] = useState('me'); // 'me' | 'other'
-  const [recipientInfo, setRecipientInfo] = useState({ name: '', phone: '', comment: '' });
-
-  const tgRef = useRef(null);
-
-  // --- EFFECTS ---
-
-  // Инициализация Telegram и загрузка данных
-  useEffect(() => {
-    if (window.Telegram && window.Telegram.WebApp) {
-      tgRef.current = window.Telegram.WebApp;
-      tgRef.current.ready();
-      tgRef.current.expand();
-      tgRef.current.setHeaderColor('#000000');
-      tgRef.current.setBackgroundColor('#000000');
-    }
-
-    // Загрузка сохраненных данных
-    const savedData = localStorage.getItem('nebuket_user_data');
-    if (savedData) {
-      setUserData(JSON.parse(savedData));
-    } else {
-      // Предзаполнение из ТГ, если нет сохраненных
-      const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
-      setUserData(prev => ({ ...prev, name: user.first_name || '' }));
-    }
-
-    const savedOrders = localStorage.getItem('nebuket_orders');
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
-  }, []);
-
-  // Сохранение данных пользователя при изменении
-  useEffect(() => {
-    localStorage.setItem('nebuket_user_data', JSON.stringify(userData));
-  }, [userData]);
-
-  // --- LOGIC ---
-
-  const addToCart = (id) => {
-    setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-    haptic('light');
-  };
-
-  const removeFromCart = (id) => {
-    setCart(prev => {
-      const newCart = { ...prev };
-      if (newCart[id] > 1) {
-        newCart[id]--;
-      } else {
-        delete newCart[id];
-      }
-      return newCart;
-    });
-    haptic('light');
-  };
-
-  const haptic = (style) => {
-    if (tgRef.current?.HapticFeedback) {
-      tgRef.current.HapticFeedback.impactOccurred(style);
-    }
-  };
-
-  const getCartTotal = () => {
-    let total = 0;
-    Object.entries(cart).forEach(([id, qty]) => {
-      const product = PRODUCTS.find(p => p.id === parseInt(id));
-      if (product) total += product.price * qty;
-    });
-    return total;
-  };
-
-  const getFinalTotal = () => {
-    const cartTotal = getCartTotal();
-    const packPrice = PACKAGING_OPTIONS.find(p => p.id === packaging)?.price || 0;
-    return cartTotal + packPrice;
-  };
-
-  const handlePhoneChange = (e, setter) => {
-    let val = e.target.value.replace(/\D/g, '');
-    if (val.length > 0 && val[0] !== '7') val = '7' + val;
-    val = val.substring(0, 11);
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ne buket</title>
     
-    let formatted = '';
-    if (val.length > 0) formatted += '+7';
-    if (val.length > 1) formatted += ' (' + val.substring(1, 4);
-    if (val.length > 4) formatted += ') ' + val.substring(4, 7);
-    if (val.length > 7) formatted += '-' + val.substring(7, 9);
-    if (val.length > 9) formatted += '-' + val.substring(9, 11);
-
-    setter(prev => ({ ...prev, phone: formatted }));
-  };
-
-  const submitOrder = () => {
-    const newOrder = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString(),
-      items: cart,
-      total: getFinalTotal(),
-      status: 'В обработке',
-      packaging: PACKAGING_OPTIONS.find(p => p.id === packaging).name,
-      delivery: deliveryMethod
-    };
-
-    const updatedOrders = [newOrder, ...orders];
-    setOrders(updatedOrders);
-    localStorage.setItem('nebuket_orders', JSON.stringify(updatedOrders));
+    <!-- Подключение стилей Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    setCart({});
-    setIsCheckoutOpen(false);
-    setActiveTab('profile');
-    haptic('success');
+    <!-- Подключение React и ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    // В реальном приложении здесь отправка данных боту через tgRef.current.sendData()
-  };
+    <!-- Babel для запуска JSX в браузере -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Скрипт Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  // --- RENDER SCREENS ---
+    <style>
+        /* Скрытие скроллбара и настройки текста */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none;
+            background-color: #000;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Анимации */
+        @keyframes float {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+            animation: float 10s infinite;
+        }
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+    </style>
+    <script>
+        // Настройка цветов Tailwind под твой дизайн
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        glass: "rgba(255, 255, 255, 0.08)",
+                        glassBorder: "rgba(255, 255, 255, 0.1)",
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-black text-white font-sans selection:bg-red-500/30 overflow-hidden">
+    <div id="root"></div>
 
-  const renderCatalog = () => (
-    <div className="pb-24 px-4 pt-6 space-y-6">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Ne buket</h1>
-          <p className="text-white/60 text-sm mt-1">Искусство дарить эмоции</p>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-500 to-orange-500 blur-lg opacity-50 absolute right-4 top-8"></div>
-      </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-      <div className="grid grid-cols-2 gap-4">
-        {PRODUCTS.map(product => (
-          <GlassCard key={product.id} className="p-0 overflow-hidden group active:scale-95 transition-transform duration-200">
-            <div className="relative aspect-[3/4]">
-              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-90" />
-              
-              <div className="absolute bottom-0 left-0 w-full p-3">
-                <h3 className="font-medium text-white text-sm truncate">{product.name}</h3>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="font-bold text-white">{product.price.toLocaleString()} ₽</span>
-                  
-                  {cart[product.id] ? (
-                    <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
-                      <button onClick={(e) => {e.stopPropagation(); removeFromCart(product.id)}} className="text-white"><Minus size={14}/></button>
-                      <span className="text-xs font-bold">{cart[product.id]}</span>
-                      <button onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} className="text-white"><Plus size={14}/></button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={(e) => {e.stopPropagation(); addToCart(product.id)}}
-                      className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full backdrop-blur-md transition-colors"
-                    >
-                      <Plus size={18} className="text-white" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        ))}
-      </div>
-    </div>
-  );
+        // --- ICONS (SVG компоненты) ---
+        const Icon = ({ path, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
 
-  const renderCart = () => {
-    const hasItems = Object.keys(cart).length > 0;
+        const Icons = {
+            ShoppingBag: (p) => <Icon {...p} path={<><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></>} />,
+            User: (p) => <Icon {...p} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />,
+            Home: (p) => <Icon {...p} path={<><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>} />,
+            Plus: (p) => <Icon {...p} path={<><path d="M5 12h14"/><path d="M12 5v14"/></>} />,
+            Minus: (p) => <Icon {...p} path={<path d="M5 12h14"/>} />,
+            X: (p) => <Icon {...p} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />,
+            ArrowLeft: (p) => <Icon {...p} path={<><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>} />,
+            MapPin: (p) => <Icon {...p} path={<><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>} />,
+            Package: (p) => <Icon {...p} path={<><path d="m16.5 9.4-9-5.19"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></>} />,
+            Truck: (p) => <Icon {...p} path={<><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></>} />,
+            Check: (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12"/>} />,
+            Bell: (p) => <Icon {...p} path={<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>} />
+        };
 
-    if (isCheckoutOpen) return renderCheckout();
+        // --- ДАННЫЕ ---
+        const PRODUCTS = [
+            { id: 1, name: 'Пионовый Закат', price: 4500, image: 'https://images.unsplash.com/photo-1563241527-3004b7be025b?auto=format&fit=crop&q=80&w=800' },
+            { id: 2, name: 'Нежная Роза', price: 3200, image: 'https://images.unsplash.com/photo-1582794543139-8ac5ea5a01f6?auto=format&fit=crop&q=80&w=800' },
+            { id: 3, name: 'Дикий Луг', price: 2800, image: 'https://images.unsplash.com/photo-1494336934272-f0efcedfc8d7?auto=format&fit=crop&q=80&w=800' },
+            { id: 4, name: 'Королевский Синий', price: 5600, image: 'https://images.unsplash.com/photo-1562690868-60bbe7621e6c?auto=format&fit=crop&q=80&w=800' },
+            { id: 5, name: 'Белое Облако', price: 4100, image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&q=80&w=800' },
+        ];
 
-    return (
-      <div className="pb-24 px-4 pt-6 h-full flex flex-col">
-        <h1 className="text-3xl font-bold text-white mb-6">Корзина</h1>
-        
-        {!hasItems ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-white/40 space-y-4">
-            <ShoppingBag size={64} strokeWidth={1} />
-            <p>Ваша корзина пуста</p>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto space-y-3">
-            {Object.entries(cart).map(([id, qty]) => {
-              const product = PRODUCTS.find(p => p.id === parseInt(id));
-              return (
-                <GlassCard key={id} className="flex items-center space-x-4 p-3">
-                  <img src={product.image} className="w-16 h-16 rounded-xl object-cover" alt="" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-white">{product.name}</h3>
-                    <p className="text-white/50 text-sm">{product.price.toLocaleString()} ₽</p>
-                  </div>
-                  <div className="flex flex-col items-center space-y-1">
-                    <button onClick={() => addToCart(product.id)} className="bg-white/10 p-1 rounded-full"><Plus size={14} /></button>
-                    <span className="text-sm font-bold">{qty}</span>
-                    <button onClick={() => removeFromCart(product.id)} className="bg-white/10 p-1 rounded-full"><Minus size={14} /></button>
-                  </div>
-                </GlassCard>
-              );
-            })}
-          </div>
-        )}
+        const PACKAGING_OPTIONS = [
+            { id: 'transport', name: 'Транспортировочная', price: 0, desc: 'Для доставки' },
+            { id: 'craft', name: 'Крафт-бумага', price: 0, desc: 'Эко-минимализм' },
+            { id: 'box', name: 'Коробка-чемодан', price: 400, desc: 'С ручкой + уход' },
+        ];
 
-        {hasItems && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <div className="flex justify-between text-white mb-4 px-2">
-              <span className="text-white/60">Итого:</span>
-              <span className="font-bold text-xl">{getCartTotal().toLocaleString()} ₽</span>
-            </div>
-            <button 
-              onClick={() => setIsCheckoutOpen(true)}
-              className="w-full bg-gradient-to-r from-red-500 to-orange-600 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95 transition-transform"
+        const MOCK_TG_USER = {
+            id: 777,
+            first_name: "Jonbella",
+            username: "soul_note",
+            photo_url: null
+        };
+
+        // --- UI КОМПОНЕНТЫ ---
+        // Карточка в стиле Glassmorphism (как на макете)
+        const GlassCard = ({ children, className = '', onClick }) => (
+            <div 
+                onClick={onClick}
+                className={`bg-glass backdrop-blur-2xl border border-glassBorder rounded-[32px] p-5 shadow-2xl ${className}`}
             >
-              Оформить заказ
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderCheckout = () => {
-    const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
-
-    return (
-      <div className="pb-24 px-4 pt-4">
-        <div className="flex items-center space-x-3 mb-6">
-          <button onClick={() => setIsCheckoutOpen(false)} className="p-2 bg-white/5 rounded-full"><ArrowLeft size={20} /></button>
-          <h2 className="text-xl font-bold">Оформление</h2>
-        </div>
-
-        <div className="space-y-6 overflow-y-auto pb-8">
-          {/* Greeting */}
-          <div className="flex items-center space-x-3 bg-gradient-to-r from-red-500/20 to-transparent p-4 rounded-2xl border border-red-500/20">
-            <User className="text-red-400" />
-            <div>
-              <p className="text-xs text-red-300">Оформляем для</p>
-              <p className="font-bold">{user.first_name} {user.last_name}</p>
+                {children}
             </div>
-          </div>
+        );
 
-          {/* Delivery Method */}
-          <div className="space-y-3">
-            <label className="text-sm text-gray-400 uppercase font-bold ml-1">Способ получения</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={() => setDeliveryMethod('delivery')}
-                className={`p-4 rounded-2xl border transition-all ${deliveryMethod === 'delivery' ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10'}`}
-              >
-                <Truck className="mb-2" />
-                <div className="font-bold text-sm">Доставка</div>
-              </button>
-              <button 
-                onClick={() => setDeliveryMethod('pickup')}
-                className={`p-4 rounded-2xl border transition-all ${deliveryMethod === 'pickup' ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10'}`}
-              >
-                <Package className="mb-2" />
-                <div className="font-bold text-sm">Самовывоз</div>
-              </button>
+        const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
+            <div className="flex flex-col space-y-2 w-full">
+                <label className="text-white/60 text-xs ml-4 uppercase tracking-wider font-semibold">{label}</label>
+                <input
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className="bg-glass border border-glassBorder rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-red-400/50 transition-colors w-full"
+                />
             </div>
-          </div>
+        );
 
-          {/* Packaging */}
-          <div className="space-y-3">
-            <label className="text-sm text-gray-400 uppercase font-bold ml-1">Упаковка</label>
-            <div className="space-y-2">
-              {PACKAGING_OPTIONS.map(opt => (
-                <div 
-                  key={opt.id}
-                  onClick={() => setPackaging(opt.id)}
-                  className={`flex justify-between items-center p-4 rounded-2xl border transition-all cursor-pointer ${packaging === opt.id ? 'bg-white/10 border-red-500/50' : 'bg-white/5 border-white/5'}`}
-                >
-                  <div>
-                    <div className="font-bold text-sm">{opt.name}</div>
-                    <div className="text-xs text-gray-400">{opt.desc}</div>
-                  </div>
-                  <div className="font-bold text-red-400">{opt.price === 0 ? 'Бесплатно' : `${opt.price} ₽`}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Contact Info */}
-          <GlassCard className="space-y-4">
-            <h3 className="font-bold text-lg mb-2">Ваши данные</h3>
-            <InputField 
-              label="Имя" 
-              value={userData.name} 
-              onChange={(e) => setUserData({...userData, name: e.target.value})} 
-            />
-            <div className="flex flex-col space-y-2">
-               <label className="text-gray-400 text-xs ml-2 uppercase tracking-wider font-semibold">Телефон</label>
-               <input
-                type="tel"
-                value={userData.phone}
-                onChange={(e) => handlePhoneChange(e, setUserData)}
-                placeholder="+7 (999) 000-00-00"
-                className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-400/50 transition-colors"
-              />
-            </div>
+        function App() {
+            const [activeTab, setActiveTab] = useState('catalog');
+            const [cart, setCart] = useState({});
+            const [orders, setOrders] = useState([]);
+            const [userData, setUserData] = useState({ name: '', phone: '', city: '', street: '', house: '', apt: '' });
             
-            {deliveryMethod === 'delivery' && (
-              <>
-                <div className="border-t border-white/10 my-4"></div>
-                <h3 className="font-bold text-lg mb-2">Адрес доставки</h3>
-                <InputField label="Город" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} />
-                <InputField label="Улица" value={userData.street} onChange={(e) => setUserData({...userData, street: e.target.value})} />
-                <div className="flex space-x-3">
-                  <InputField label="Дом" value={userData.house} onChange={(e) => setUserData({...userData, house: e.target.value})} />
-                  <InputField label="Кв/Офис" value={userData.apt} onChange={(e) => setUserData({...userData, apt: e.target.value})} />
+            const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+            const [deliveryMethod, setDeliveryMethod] = useState('delivery');
+            const [packaging, setPackaging] = useState('transport');
+            const [recipient, setRecipient] = useState('me');
+            const [recipientInfo, setRecipientInfo] = useState({ name: '', phone: '', comment: '' });
+
+            const tgRef = useRef(null);
+
+            useEffect(() => {
+                // Инициализация Telegram
+                if (window.Telegram && window.Telegram.WebApp) {
+                    tgRef.current = window.Telegram.WebApp;
+                    tgRef.current.ready();
+                    tgRef.current.expand();
+                    tgRef.current.setHeaderColor('#000000');
+                    tgRef.current.setBackgroundColor('#000000');
+                    
+                    const user = tgRef.current.initDataUnsafe?.user;
+                    if(user && !userData.name) {
+                        setUserData(prev => ({ ...prev, name: user.first_name || '' }));
+                    }
+                } else {
+                     setUserData(prev => ({ ...prev, name: MOCK_TG_USER.first_name }));
+                }
+
+                const savedData = localStorage.getItem('nebuket_user_data');
+                if (savedData) setUserData(JSON.parse(savedData));
+
+                const savedOrders = localStorage.getItem('nebuket_orders');
+                if (savedOrders) setOrders(JSON.parse(savedOrders));
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('nebuket_user_data', JSON.stringify(userData));
+            }, [userData]);
+
+            const haptic = (style) => {
+                if (tgRef.current?.HapticFeedback) {
+                    tgRef.current.HapticFeedback.impactOccurred(style);
+                }
+            };
+
+            const addToCart = (id) => {
+                setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+                haptic('light');
+            };
+
+            const removeFromCart = (id) => {
+                setCart(prev => {
+                    const newCart = { ...prev };
+                    if (newCart[id] > 1) newCart[id]--;
+                    else delete newCart[id];
+                    return newCart;
+                });
+                haptic('light');
+            };
+
+            const getCartTotal = () => {
+                let total = 0;
+                Object.entries(cart).forEach(([id, qty]) => {
+                    const product = PRODUCTS.find(p => p.id === parseInt(id));
+                    if (product) total += product.price * qty;
+                });
+                return total;
+            };
+
+            const getFinalTotal = () => {
+                const cartTotal = getCartTotal();
+                const packPrice = PACKAGING_OPTIONS.find(p => p.id === packaging)?.price || 0;
+                return cartTotal + packPrice;
+            };
+
+            const handlePhoneChange = (e, setter) => {
+                let val = e.target.value.replace(/\D/g, '');
+                if (val.length > 0 && val[0] !== '7') val = '7' + val;
+                val = val.substring(0, 11);
+                
+                let formatted = '';
+                if (val.length > 0) formatted += '+7';
+                if (val.length > 1) formatted += ' (' + val.substring(1, 4);
+                if (val.length > 4) formatted += ') ' + val.substring(4, 7);
+                if (val.length > 7) formatted += '-' + val.substring(7, 9);
+                if (val.length > 9) formatted += '-' + val.substring(9, 11);
+
+                setter(prev => ({ ...prev, phone: formatted }));
+            };
+
+            const submitOrder = () => {
+                const newOrder = {
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString(),
+                    items: cart,
+                    total: getFinalTotal(),
+                    status: 'В обработке',
+                    packaging: PACKAGING_OPTIONS.find(p => p.id === packaging).name,
+                    delivery: deliveryMethod
+                };
+
+                const updatedOrders = [newOrder, ...orders];
+                setOrders(updatedOrders);
+                localStorage.setItem('nebuket_orders', JSON.stringify(updatedOrders));
+                
+                setCart({});
+                setIsCheckoutOpen(false);
+                setActiveTab('profile');
+                haptic('success');
+            };
+
+            // --- ЭКРАН: КАТАЛОГ ---
+            const renderCatalog = () => (
+                <div className="pb-28 px-4 pt-6 space-y-6 animate-in fade-in duration-500">
+                    <div className="flex justify-between items-start mb-4">
+                         <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-500 to-pink-600 p-[2px]">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" className="w-full h-full rounded-full object-cover border-2 border-black" alt="avatar" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-bold text-white leading-tight">Jonbella <span className="text-white/50 font-normal">Soul note</span></h2>
+                                <p className="text-xs text-red-400">Online</p>
+                            </div>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-glass flex items-center justify-center backdrop-blur-md">
+                            <Icons.Bell size={20} />
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                         <h1 className="text-4xl font-bold text-white mb-2">Perfect!</h1>
+                         <p className="text-white/60 text-sm max-w-[250px]">I look forward to giving emotions, few things you creating together.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        {PRODUCTS.map(product => (
+                            <GlassCard key={product.id} className="p-0 overflow-hidden group active:scale-95 transition-transform duration-200 border-none bg-glass/20">
+                                <div className="relative aspect-[3/4]">
+                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 w-full p-4">
+                                        <h3 className="font-bold text-white text-sm mb-1">{product.name}</h3>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-white/90 font-medium">{product.price.toLocaleString()} ₽</span>
+                                            {cart[product.id] ? (
+                                                <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
+                                                    <button onClick={(e) => {e.stopPropagation(); removeFromCart(product.id)}} className="text-white"><Icons.Minus size={14}/></button>
+                                                    <span className="text-xs font-bold">{cart[product.id]}</span>
+                                                    <button onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} className="text-white"><Icons.Plus size={14}/></button>
+                                                </div>
+                                            ) : (
+                                                <button onClick={(e) => {e.stopPropagation(); addToCart(product.id)}} className="bg-white/20 hover:bg-white/40 p-2 rounded-full backdrop-blur-md transition-colors">
+                                                    <Icons.Plus size={16} className="text-white" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </GlassCard>
+                        ))}
+                    </div>
                 </div>
-              </>
-            )}
-          </GlassCard>
+            );
 
-          {/* Recipient Logic */}
-          {deliveryMethod === 'delivery' && (
-            <GlassCard className="space-y-4">
-              <h3 className="font-bold text-lg mb-2">Кому звонить?</h3>
-              <div className="flex bg-black/40 p-1 rounded-xl">
-                <button 
-                  onClick={() => setRecipient('me')} 
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${recipient === 'me' ? 'bg-white/20 text-white shadow-lg' : 'text-gray-400'}`}
-                >
-                  Мне
-                </button>
-                <button 
-                  onClick={() => setRecipient('other')} 
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${recipient === 'other' ? 'bg-white/20 text-white shadow-lg' : 'text-gray-400'}`}
-                >
-                  Получателю
-                </button>
-              </div>
+            // --- ЭКРАН: КОРЗИНА ---
+            const renderCart = () => {
+                const hasItems = Object.keys(cart).length > 0;
+                if (isCheckoutOpen) return renderCheckout();
 
-              {recipient === 'other' && (
-                <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
-                  <InputField 
-                    label="Имя получателя" 
-                    value={recipientInfo.name} 
-                    onChange={(e) => setRecipientInfo({...recipientInfo, name: e.target.value})} 
-                  />
-                  <div className="flex flex-col space-y-2">
-                    <label className="text-gray-400 text-xs ml-2 uppercase tracking-wider font-semibold">Телефон получателя</label>
-                    <input
-                      type="tel"
-                      value={recipientInfo.phone}
-                      onChange={(e) => handlePhoneChange(e, setRecipientInfo)}
-                      placeholder="+7 (999) 000-00-00"
-                      className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-red-400/50 transition-colors"
-                    />
-                  </div>
-                  <InputField 
-                    label="Комментарий (опц.)" 
-                    value={recipientInfo.comment} 
-                    onChange={(e) => setRecipientInfo({...recipientInfo, comment: e.target.value})} 
-                  />
-                </div>
-              )}
-            </GlassCard>
-          )}
+                return (
+                    <div className="pb-28 px-4 pt-6 h-full flex flex-col animate-in fade-in duration-300">
+                        <h1 className="text-3xl font-bold text-white mb-6">Корзина</h1>
+                        {!hasItems ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-white/30 space-y-4">
+                                <div className="w-24 h-24 rounded-full bg-glass flex items-center justify-center">
+                                    <Icons.ShoppingBag size={40} />
+                                </div>
+                                <p>Ваша корзина пуста</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar">
+                                {Object.entries(cart).map(([id, qty]) => {
+                                    const product = PRODUCTS.find(p => p.id === parseInt(id));
+                                    return (
+                                        <GlassCard key={id} className="flex items-center space-x-4 p-3 pr-5">
+                                            <img src={product.image} className="w-20 h-20 rounded-2xl object-cover" alt="" />
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-white text-lg">{product.name}</h3>
+                                                <p className="text-white/50">{product.price.toLocaleString()} ₽</p>
+                                            </div>
+                                            <div className="flex flex-col items-center space-y-2 bg-glass p-1 rounded-full">
+                                                <button onClick={() => addToCart(product.id)} className="p-1 hover:text-red-400"><Icons.Plus size={16} /></button>
+                                                <span className="text-sm font-bold">{qty}</span>
+                                                <button onClick={() => removeFromCart(product.id)} className="p-1 hover:text-red-400"><Icons.Minus size={16} /></button>
+                                            </div>
+                                        </GlassCard>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        {hasItems && (
+                            <div className="mt-4 pt-4 border-t border-white/10">
+                                <div className="flex justify-between text-white mb-6 px-2 items-baseline">
+                                    <span className="text-white/60 text-lg">Итого:</span>
+                                    <span className="font-bold text-3xl">{getCartTotal().toLocaleString()} <span className="text-xl text-white/50">₽</span></span>
+                                </div>
+                                <button onClick={() => setIsCheckoutOpen(true)} className="w-full bg-white text-black font-bold text-lg py-4 rounded-[20px] shadow-lg active:scale-95 transition-transform hover:bg-gray-100">
+                                    Оформить заказ
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
 
-          {/* Total & Actions */}
-          <div className="pt-4">
-            <div className="flex justify-between items-center mb-6 px-2">
-              <span className="text-gray-400">К оплате:</span>
-              <span className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                {getFinalTotal().toLocaleString()} ₽
-              </span>
-            </div>
+            // --- ЭКРАН: ОФОРМЛЕНИЕ (CHECKOUT) ---
+            const renderCheckout = () => {
+                const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
+                return (
+                    <div className="pb-28 px-4 pt-4 animate-in slide-in-from-right duration-300">
+                        <div className="flex items-center space-x-4 mb-8">
+                            <button onClick={() => setIsCheckoutOpen(false)} className="w-12 h-12 flex items-center justify-center bg-glass rounded-full active:bg-white/20"><Icons.ArrowLeft size={24} /></button>
+                            <h2 className="text-2xl font-bold">Оформление</h2>
+                        </div>
+                        
+                        <div className="space-y-6 overflow-y-auto pb-8 no-scrollbar">
+                            {/* Карточка пользователя */}
+                            <div className="flex items-center space-x-4 bg-gradient-to-r from-red-500/20 to-purple-500/10 p-5 rounded-[24px] border border-red-500/20">
+                                <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white">
+                                    <Icons.User />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-red-300 uppercase font-bold tracking-wide">Заказчик</p>
+                                    <p className="font-bold text-lg">{user.first_name} {user.last_name}</p>
+                                </div>
+                            </div>
 
-            <button 
-              onClick={submitOrder}
-              className="w-full bg-white text-black font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform mb-3"
-            >
-              Передать на сборку
-            </button>
-            <button 
-              onClick={() => setIsCheckoutOpen(false)}
-              className="w-full text-red-400 py-3 font-medium active:opacity-70"
-            >
-              Отменить
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+                            {/* Способ получения */}
+                            <div className="space-y-3">
+                                <label className="text-xs text-white/40 uppercase font-bold ml-4">Способ получения</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => setDeliveryMethod('delivery')} className={`p-4 rounded-[24px] border transition-all duration-300 flex flex-col items-center justify-center h-28 space-y-2 ${deliveryMethod === 'delivery' ? 'bg-white text-black border-white' : 'bg-glass border-glassBorder text-white/60'}`}>
+                                        <Icons.Truck size={28}/>
+                                        <div className="font-bold">Доставка</div>
+                                    </button>
+                                    <button onClick={() => setDeliveryMethod('pickup')} className={`p-4 rounded-[24px] border transition-all duration-300 flex flex-col items-center justify-center h-28 space-y-2 ${deliveryMethod === 'pickup' ? 'bg-white text-black border-white' : 'bg-glass border-glassBorder text-white/60'}`}>
+                                        <Icons.Package size={28}/>
+                                        <div className="font-bold">Самовывоз</div>
+                                    </button>
+                                </div>
+                            </div>
 
-  const renderProfile = () => {
-    const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
+                            {/* Упаковка */}
+                            <div className="space-y-3">
+                                <label className="text-xs text-white/40 uppercase font-bold ml-4">Упаковка</label>
+                                <div className="space-y-2">
+                                    {PACKAGING_OPTIONS.map(opt => (
+                                        <div key={opt.id} onClick={() => setPackaging(opt.id)} className={`flex justify-between items-center p-5 rounded-[24px] border transition-all cursor-pointer ${packaging === opt.id ? 'bg-glass border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-glass border-glassBorder opacity-70'}`}>
+                                            <div>
+                                                <div className="font-bold text-base">{opt.name}</div>
+                                                <div className="text-xs text-white/40 mt-1">{opt.desc}</div>
+                                            </div>
+                                            <div className="font-bold text-red-400">{opt.price === 0 ? '0 ₽' : `+${opt.price} ₽`}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-    return (
-      <div className="pb-24 px-4 pt-10 space-y-6">
-         {/* Header */}
-         <div className="flex items-center space-x-4">
-           <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center border-4 border-white/5 shadow-2xl">
-              {user.photo_url ? (
-                <img src={user.photo_url} className="w-full h-full rounded-full" alt="avatar" />
-              ) : (
-                <span className="text-3xl font-bold text-white">{user.first_name[0]}</span>
-              )}
-           </div>
-           <div>
-             <h2 className="text-2xl font-bold">{user.first_name} {user.last_name}</h2>
-             <p className="text-red-400">@{user.username || 'username'}</p>
-           </div>
-         </div>
+                            {/* Форма данных */}
+                            <GlassCard className="space-y-5">
+                                <h3 className="font-bold text-xl mb-2 ml-1">Контактные данные</h3>
+                                <InputField label="Ваше Имя" value={userData.name} onChange={(e) => setUserData({...userData, name: e.target.value})} />
+                                <div className="flex flex-col space-y-2 w-full">
+                                   <label className="text-white/60 text-xs ml-4 uppercase tracking-wider font-semibold">Телефон</label>
+                                   <input type="tel" value={userData.phone} onChange={(e) => handlePhoneChange(e, setUserData)} placeholder="+7 (___) ___-__-__" className="bg-glass border border-glassBorder rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-red-400/50 transition-colors w-full" />
+                                </div>
+                                {deliveryMethod === 'delivery' && (
+                                    <div className="pt-4 space-y-5 animate-in fade-in">
+                                        <div className="border-t border-white/10"></div>
+                                        <h3 className="font-bold text-xl mb-2 ml-1">Адрес</h3>
+                                        <InputField label="Город" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} />
+                                        <InputField label="Улица" value={userData.street} onChange={(e) => setUserData({...userData, street: e.target.value})} />
+                                        <div className="flex space-x-3">
+                                            <InputField label="Дом" value={userData.house} onChange={(e) => setUserData({...userData, house: e.target.value})} />
+                                            <InputField label="Кв/Офис" value={userData.apt} onChange={(e) => setUserData({...userData, apt: e.target.value})} />
+                                        </div>
+                                    </div>
+                                )}
+                            </GlassCard>
 
-         {/* Saved Delivery Data */}
-         <GlassCard>
-           <div className="flex justify-between items-center mb-4">
-             <h3 className="font-bold text-lg">Данные доставки</h3>
-             <MapPin size={18} className="text-gray-500"/>
-           </div>
-           <div className="space-y-3">
-             <InputField label="Город" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} />
-             <InputField label="Улица" value={userData.street} onChange={(e) => setUserData({...userData, street: e.target.value})} />
-             <div className="flex space-x-3">
-                  <InputField label="Дом" value={userData.house} onChange={(e) => setUserData({...userData, house: e.target.value})} />
-                  <InputField label="Кв" value={userData.apt} onChange={(e) => setUserData({...userData, apt: e.target.value})} />
-            </div>
-           </div>
-         </GlassCard>
+                            {/* Получатель */}
+                            {deliveryMethod === 'delivery' && (
+                                <GlassCard className="space-y-5">
+                                    <h3 className="font-bold text-xl mb-2 ml-1">Кто получает?</h3>
+                                    <div className="flex bg-black/40 p-1 rounded-2xl">
+                                        <button onClick={() => setRecipient('me')} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${recipient === 'me' ? 'bg-white/20 text-white shadow-lg' : 'text-white/40'}`}>Я сам</button>
+                                        <button onClick={() => setRecipient('other')} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${recipient === 'other' ? 'bg-white/20 text-white shadow-lg' : 'text-white/40'}`}>Другой человек</button>
+                                    </div>
+                                    {recipient === 'other' && (
+                                        <div className="space-y-5 pt-2 animate-in fade-in">
+                                            <InputField label="Имя получателя" value={recipientInfo.name} onChange={(e) => setRecipientInfo({...recipientInfo, name: e.target.value})} />
+                                            <div className="flex flex-col space-y-2 w-full">
+                                                <label className="text-white/60 text-xs ml-4 uppercase tracking-wider font-semibold">Телефон получателя</label>
+                                                <input type="tel" value={recipientInfo.phone} onChange={(e) => handlePhoneChange(e, setRecipientInfo)} placeholder="+7 (___) ___-__-__" className="bg-glass border border-glassBorder rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-red-400/50 transition-colors w-full" />
+                                            </div>
+                                            <InputField label="Комментарий" value={recipientInfo.comment} onChange={(e) => setRecipientInfo({...recipientInfo, comment: e.target.value})} />
+                                        </div>
+                                    )}
+                                </GlassCard>
+                            )}
 
-         {/* Order History */}
-         <div>
-           <h3 className="font-bold text-xl mb-4 pl-2">Мои заказы</h3>
-           <div className="space-y-3">
-             {orders.length === 0 ? (
-               <p className="text-gray-500 text-center py-8">История заказов пуста</p>
-             ) : (
-               orders.map(order => (
-                 <GlassCard key={order.id} className="flex justify-between items-center">
-                   <div>
-                     <div className="font-bold text-white">Заказ #{order.id.toString().slice(-4)}</div>
-                     <div className="text-xs text-gray-400">{order.date} • {Object.values(order.items).reduce((a,b)=>a+b,0)} тв.</div>
-                     <div className="text-xs text-gray-500 mt-1">{order.packaging}</div>
-                   </div>
-                   <div className="text-right">
-                     <div className="font-bold text-red-400">{order.total.toLocaleString()} ₽</div>
-                     <div className="text-[10px] bg-white/10 px-2 py-1 rounded-full mt-1 inline-block">{order.status}</div>
-                   </div>
-                 </GlassCard>
-               ))
-             )}
-           </div>
-         </div>
-      </div>
-    );
-  };
+                            {/* Итого и кнопки */}
+                            <div className="pt-6 pb-8">
+                                <div className="flex justify-between items-center mb-6 px-4">
+                                    <span className="text-white/50 text-lg">К оплате:</span>
+                                    <span className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-red-200">{getFinalTotal().toLocaleString()} ₽</span>
+                                </div>
+                                <button onClick={submitOrder} className="w-full bg-white text-black font-bold text-lg py-4 rounded-[20px] shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95 transition-transform mb-4">
+                                    Подтвердить заказ
+                                </button>
+                                <button onClick={() => setIsCheckoutOpen(false)} className="w-full text-red-400/80 py-3 font-medium active:opacity-70 hover:text-red-400 transition-colors">
+                                    Вернуться назад
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
 
-  return (
-    <div className="bg-black min-h-screen text-white font-sans selection:bg-red-500/30">
-      {/* Background Ambience */}
-      <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] bg-red-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+            // --- ЭКРАН: ПРОФИЛЬ ---
+            const renderProfile = () => {
+                const user = tgRef.current?.initDataUnsafe?.user || MOCK_TG_USER;
+                return (
+                    <div className="pb-28 px-4 pt-10 space-y-8 animate-in fade-in duration-500">
+                        <div className="flex items-center space-x-5 px-2">
+                            <div className="w-24 h-24 rounded-full p-[2px] bg-gradient-to-tr from-red-500 to-purple-600 shadow-2xl">
+                                <div className="w-full h-full rounded-full border-4 border-black overflow-hidden bg-gray-800 flex items-center justify-center">
+                                     {user.photo_url ? <img src={user.photo_url} className="w-full h-full object-cover" alt="avatar" /> : <span className="text-3xl font-bold text-white">{user.first_name?.[0]}</span>}
+                                </div>
+                            </div>
+                            <div>
+                                <h2 className="text-3xl font-bold tracking-tight">{user.first_name}</h2>
+                                <p className="text-red-400 font-medium opacity-80">@{user.username || 'username'}</p>
+                            </div>
+                        </div>
 
-      {/* Main Content Area */}
-      <div className="relative z-10 max-w-md mx-auto h-screen flex flex-col">
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          {activeTab === 'catalog' && renderCatalog()}
-          {activeTab === 'cart' && renderCart()}
-          {activeTab === 'profile' && renderProfile()}
-        </div>
-      </div>
+                        <GlassCard className="relative overflow-hidden">
+                             <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                            <div className="flex justify-between items-center mb-6 relative z-10">
+                                <h3 className="font-bold text-xl">Сохраненный адрес</h3>
+                                <div className="p-2 bg-white/10 rounded-full"><Icons.MapPin size={18} className="text-white"/></div>
+                            </div>
+                            <div className="space-y-4 relative z-10">
+                                <InputField label="Город" value={userData.city} onChange={(e) => setUserData({...userData, city: e.target.value})} />
+                                <InputField label="Улица" value={userData.street} onChange={(e) => setUserData({...userData, street: e.target.value})} />
+                                <div className="flex space-x-3">
+                                    <InputField label="Дом" value={userData.house} onChange={(e) => setUserData({...userData, house: e.target.value})} />
+                                    <InputField label="Кв" value={userData.apt} onChange={(e) => setUserData({...userData, apt: e.target.value})} />
+                                </div>
+                            </div>
+                        </GlassCard>
 
-      {/* Bottom Navigation */}
-      {!isCheckoutOpen && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[360px] z-50">
-          <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-2 flex justify-between items-center shadow-2xl">
-            <button 
-              onClick={() => setActiveTab('catalog')}
-              className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all duration-300 ${activeTab === 'catalog' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'}`}
-            >
-              <Home size={24} strokeWidth={activeTab === 'catalog' ? 2.5 : 2} />
-            </button>
-            <button 
-              onClick={() => setActiveTab('cart')}
-              className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all duration-300 relative ${activeTab === 'cart' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'}`}
-            >
-              <ShoppingBag size={24} strokeWidth={activeTab === 'cart' ? 2.5 : 2} />
-              {Object.keys(cart).length > 0 && activeTab !== 'cart' && (
-                <div className="absolute top-2 right-8 w-2 h-2 bg-red-500 rounded-full"></div>
-              )}
-            </button>
-            <button 
-              onClick={() => setActiveTab('profile')}
-              className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all duration-300 ${activeTab === 'profile' ? 'bg-white text-black shadow-lg scale-105' : 'text-gray-400 hover:text-white'}`}
-            >
-              <User size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
-            </button>
-          </div>
-        </div>
-      )}
+                        <div>
+                            <h3 className="font-bold text-2xl mb-5 pl-2">История заказов</h3>
+                            <div className="space-y-4 pb-8">
+                                {orders.length === 0 ? (
+                                    <div className="text-center py-12 bg-glass rounded-[32px] border border-glassBorder border-dashed">
+                                        <p className="text-white/40">Здесь пока пусто</p>
+                                    </div>
+                                ) : (
+                                    orders.map(order => (
+                                        <GlassCard key={order.id} className="flex justify-between items-center active:scale-95 transition-transform">
+                                            <div>
+                                                <div className="font-bold text-white text-lg">Заказ #{order.id.toString().slice(-4)}</div>
+                                                <div className="text-sm text-white/50 mt-1">{order.date} • {Object.values(order.items).reduce((a,b)=>a+b,0)} товара</div>
+                                                <div className="text-xs text-red-300 mt-2 bg-red-500/10 inline-block px-2 py-1 rounded-lg">{order.status}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-xl">{order.total.toLocaleString()} ₽</div>
+                                            </div>
+                                        </GlassCard>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
 
-      {/* Telegram Script */}
-      <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    </div>
-  );
-}
+            // --- ОСНОВНОЙ РЕНДЕР ---
+            return (
+                <>
+                    {/* Атмосферный фон (Ambient Background) - как на скриншоте */}
+                    <div className="fixed top-0 left-0 w-full h-full bg-black z-0">
+                         {/* Красное пятно сверху */}
+                        <div className="absolute top-[-10%] left-[10%] w-[300px] h-[300px] bg-red-600 rounded-full blur-[120px] opacity-40 animate-blob"></div>
+                         {/* Фиолетовое пятно снизу */}
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[350px] h-[350px] bg-purple-700 rounded-full blur-[100px] opacity-30 animate-blob animation-delay-2000"></div>
+                        {/* Розовое пятно в центре */}
+                         <div className="absolute top-[40%] left-[20%] w-[250px] h-[250px] bg-pink-600 rounded-full blur-[120px] opacity-20 animate-blob animation-delay-4000"></div>
+                    </div>
+
+                    <div className="relative z-10 max-w-md mx-auto h-screen flex flex-col font-sans">
+                        <div className="flex-1 overflow-y-auto no-scrollbar">
+                            {activeTab === 'catalog' && renderCatalog()}
+                            {activeTab === 'cart' && renderCart()}
+                            {activeTab === 'profile' && renderProfile()}
+                        </div>
+                    </div>
+
+                    {/* Нижняя навигация */}
+                    {!isCheckoutOpen && (
+                        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[360px] z-50">
+                            <div className="bg-glass backdrop-blur-2xl border border-glassBorder rounded-[32px] p-2 flex justify-between items-center shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+                                <button onClick={() => setActiveTab('catalog')} className={`flex-1 flex flex-col items-center py-4 rounded-[24px] transition-all duration-300 ${activeTab === 'catalog' ? 'bg-white text-black shadow-lg scale-105' : 'text-white/40 hover:text-white'}`}>
+                                    <Icons.Home size={24} strokeWidth={2.5} />
+                                </button>
+                                <button onClick={() => setActiveTab('cart')} className={`flex-1 flex flex-col items-center py-4 rounded-[24px] transition-all duration-300 relative ${activeTab === 'cart' ? 'bg-white text-black shadow-lg scale-105' : 'text-white/40 hover:text-white'}`}>
+                                    <Icons.ShoppingBag size={24} strokeWidth={2.5} />
+                                    {Object.keys(cart).length > 0 && activeTab !== 'cart' && <div className="absolute top-3 right-8 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_red]"></div>}
+                                </button>
+                                <button onClick={() => setActiveTab('profile')} className={`flex-1 flex flex-col items-center py-4 rounded-[24px] transition-all duration-300 ${activeTab === 'profile' ? 'bg-white text-black shadow-lg scale-105' : 'text-white/40 hover:text-white'}`}>
+                                    <Icons.User size={24} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
